@@ -1,0 +1,22 @@
+{
+  description = "workaround for touchscreen device";
+
+  inputs = {
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  };
+
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+    systems = [ "x86_64-linux" "aarch64-linux" ];
+    perSystem = { pkgs, system, ... }: {
+      devShells = {
+        default = pkgs.mkShell {
+          packages = [
+            (pkgs.callPackage ./default.nix { })
+            (pkgs.python3.withPackages (ps: []))
+          ];
+        };
+      };
+    };
+  };
+}
