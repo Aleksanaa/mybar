@@ -14,6 +14,8 @@ import Niri 0.1
 
 
 ShellRoot {
+    id: root
+    
     readonly property var colors: {
         "bg": "#1e1e2e",
         "fg": "#cdd6f4",
@@ -36,6 +38,7 @@ ShellRoot {
     }
 
     component MyThermo: Rectangle {
+        id: thermoRoot
         width: 6
         height: 20
         color: "#585b70"
@@ -45,7 +48,7 @@ ShellRoot {
 
         Rectangle {
             width: parent.width
-            height: parent.height * thermometerTrack.progressValue
+            height: parent.height * thermoRoot.progressValue
             anchors.bottom: parent.bottom
             color: colors.accent
             Behavior on height {
@@ -68,16 +71,26 @@ ShellRoot {
     property var sysStats: ({
         "cpu": 0.01,
         "mem": 0.01,
+        "temp": 0.01,
+        "bat": { "value": "XX", "approx": "050", "charging": true },
+        "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
+        "power_profile": "balanced"
     })
 
     function recursiveUpdate(target, source) {
         for (let key in source) {
-            if (typeof source[key] === 'object' && target[key] !== undefined) {
-                recursiveUpdate(target[key], source[key]);
+            // 关键修复：如果 target 缺失这个键，先创建一个空对象防止递归崩溃
+            if (typeof source[key] === 'object' && source[key] !== null) {
+                if (target[key] === undefined || typeof target[key] !== 'object') {
+                    target[key] = {}; 
+                }
+                root.recursiveUpdate(target[key], source[key]);
             } else {
                 target[key] = source[key];
             }
         }
+        // 强制触发 UI 更新信号
+        root.sysStatsChanged(); 
     }
 
     Process {
@@ -92,13 +105,17 @@ ShellRoot {
                     let cleanData = data.trim();
                     let jsonObject = JSON.parse(cleanData);
 
-                    panel.recursiveUpdate(root.sysStats, jsonObject);
+                    root.recursiveUpdate(root.sysStats, jsonObject);
 
                 } catch (e) {
-                    console.log("JSON 解析失败:", e, "内容:", data);
+                    console.log("JSON: ", e, "content: ", data);
                 }
             }
         }
+    }
+
+    function writeOutput(event) {
+        root.pyMonitor.stdin.write(JSON.stringify(event) + "\n");
     }
 
     PanelWindow {
@@ -209,6 +226,7 @@ ShellRoot {
 
                             MyThermo {
                                 anchors.verticalCenter: parent.verticalCenter
+                                progressValue: root.sysStats.cpu
                             }
                         }
 
@@ -228,6 +246,7 @@ ShellRoot {
 
                             MyThermo {
                                 anchors.verticalCenter: parent.verticalCenter
+                                progressValue: root.sysStats.mem
                             }
                         }
 
@@ -247,6 +266,7 @@ ShellRoot {
 
                             MyThermo {
                                 anchors.verticalCenter: parent.verticalCenter
+                                progressValue: root.sysStats.temp
                             }
                         }
                     }
@@ -277,14 +297,14 @@ ShellRoot {
                                 spacing: -4
                                 
                                 Text {
-                                    text: "2.12"
+                                    text: root.sysStats.net.up
                                     font.pixelSize: 8
                                     color: colors.fg
                                     font.bold: true
                                     font.family: globalFont
                                 }
                                 Text {
-                                    text: "MB/s"
+                                    text: root.sysStats.net.up_unit
                                     font.pixelSize: 8
                                     color:colors.fg
                                     font.bold: true
@@ -311,14 +331,14 @@ ShellRoot {
                                 spacing: -4
                                 
                                 Text {
-                                    text: "3.22"
+                                    text: root.sysStats.net.down
                                     font.pixelSize: 8
                                     color: colors.fg
                                     font.bold: true
                                     font.family: globalFont
                                 }
                                 Text {
-                                    text: "KB/s"
+                                    text: root.sysStats.net.down_unit
                                     font.pixelSize: 8
                                     color:colors.fg
                                     font.bold: true
@@ -411,16 +431,17 @@ ShellRoot {
                         Row {
                             IconImage {
                                 // battery-empty-symbolic
-                                source: Quickshell.iconPath("battery-level-70-charging-symbolic")
-                                implicitSize: 15
+                                source: Quickshell.iconPath(`battery-${root.sysStats.bat.approx}${root.sysStats.bat.charging ? "-charging" : ""}-symbolic`)
+                                implicitSize: 17
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
                                     color: colors.accent
                                 }
                             }
                             Text {
+                                anchors.verticalCenter: parent.verticalCenter
                                 id: batPercentage
-                                text: "95"
+                                text: root.sysStats.bat.value
                                 font.pixelSize: 10
                                 color: colors.fg
                                 font.bold: true
@@ -431,11 +452,11 @@ ShellRoot {
 
                         IconImage {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            source: Quickshell.iconPath("power-profile-balanced-symbolic")
-                            implicitSize: 16
+                            source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
+                            implicitSize: 20
                             layer.enabled: true
                             layer.effect: ColorOverlay {
-                                color: colors.accent
+                                color: "#bac2de"
                             }
                         }
                     }

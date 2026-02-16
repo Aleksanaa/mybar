@@ -13,7 +13,12 @@
         default = pkgs.mkShell {
           packages = [
             (pkgs.callPackage ./default.nix { })
-            (pkgs.python3.withPackages (ps: []))
+            (pkgs.python3.withPackages (ps: [
+              ps.psutil
+              ps.dbus-python
+              ps.pygobject3
+            ]))
+            pkgs.gobject-introspection
           ];
         };
       };
