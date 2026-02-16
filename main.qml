@@ -44,7 +44,7 @@ ShellRoot {
         color: "#585b70"
         // radius: 3
 
-        property real progressValue: 0.2
+        property real progressValue: 0
 
         Rectangle {
             width: parent.width
@@ -74,7 +74,8 @@ ShellRoot {
         "temp": 0.01,
         "bat": { "value": "XX", "approx": "050", "charging": true },
         "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
-        "power_profile": "balanced"
+        "power_profile": "balanced",
+        "brightness": { "value": 0.01, "approx": "low" }
     })
 
     function recursiveUpdate(target, source) {
@@ -430,7 +431,6 @@ ShellRoot {
 
                         Row {
                             IconImage {
-                                // battery-empty-symbolic
                                 source: Quickshell.iconPath(`battery-${root.sysStats.bat.approx}${root.sysStats.bat.charging ? "-charging" : ""}-symbolic`)
                                 implicitSize: 17
                                 layer.enabled: true
@@ -453,10 +453,10 @@ ShellRoot {
                         IconImage {
                             anchors.horizontalCenter: parent.horizontalCenter
                             source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
-                            implicitSize: 20
+                            implicitSize: 17
                             layer.enabled: true
                             layer.effect: ColorOverlay {
-                                color: "#bac2de"
+                                color: colors.accent
                             }
                         }
                     }
@@ -474,8 +474,8 @@ ShellRoot {
 
                             IconImage {
                                 anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("display-brightness-symbolic")
-                                implicitSize: 14
+                                source: Quickshell.iconPath(`brightness-${root.sysStats.brightness.approx}-symbolic`)
+                                implicitSize: 17
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
                                     color: colors.accent
@@ -484,6 +484,7 @@ ShellRoot {
 
                             MyThermo {
                                 anchors.verticalCenter: parent.verticalCenter
+                                progressValue: root.sysStats.brightness.value
                             }
                         }
 

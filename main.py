@@ -59,6 +59,56 @@ def dbus_thread_worker(loop):
 # --- End D-Bus setup ---
 
 
+# --- Brightness monitoring setup ---
+BRIGHTNESS_QUEUE = asyncio.Queue()
+BRIGHTNESS_THREAD = None
+
+def brightness_thread_worker(loop):
+    """Worker function to run the pyudev monitor."""
+    try:
+        import pyudev
+        context = pyudev.Context()
+        monitor = pyudev.Monitor.from_netlink(context)
+        monitor.filter_by(subsystem='backlight')
+
+        # Get initial brightness
+        # We wrap this in a separate try/except because the device might not be there
+        # at startup, but the monitor should still run.
+        try:
+            for device in context.list_devices(subsystem='backlight'):
+                if 'backlight' in device.subsystem:
+                    brightness = device.attributes.asint('brightness')
+                    max_brightness = device.attributes.asint('max_brightness')
+                    if max_brightness > 0:
+                        percent = brightness / max_brightness
+                        loop.call_soon_threadsafe(BRIGHTNESS_QUEUE.put_nowait, percent)
+        except Exception as e:
+            print(f"Could not get initial brightness: {e}", file=sys.stderr)
+
+
+        for device in iter(monitor.poll, None):
+            if device.action == 'change':
+                try:
+                    brightness = device.attributes.asint('brightness')
+                    max_brightness = device.attributes.asint('max_brightness')
+                    if max_brightness > 0:
+                        percent = brightness / max_brightness
+                        loop.call_soon_threadsafe(BRIGHTNESS_QUEUE.put_nowait, percent)
+                except (KeyError, ValueError):
+                    # This can happen if attributes are not immediately available.
+                    pass
+    except ImportError:
+        print(
+            "Warning: 'pyudev' library not found. "
+            "Brightness monitoring will be disabled.",
+            file=sys.stderr,
+        )
+    except Exception as e:
+        print(f"Error in brightness thread: {e}", file=sys.stderr)
+
+# --- End Brightness monitoring setup ---
+
+
 # Registry for action handlers
 ACTION_HANDLERS = {}
 # Registry for long-running tasks
@@ -289,6 +339,20 @@ async def power_profile_monitor(writer):
         DBUS_QUEUE.task_done()
 
 
+@long_running_task
+async def brightness_monitor(writer):
+    """Monitors for brightness changes by listening to the BRIGHTNESS_QUEUE."""
+    while True:
+        percent = await BRIGHTNESS_QUEUE.get()
+        approx = "medium"
+        if percent > 0.66:
+            approx = "high"
+        elif percent < 0.33:
+            approx = "low"
+        await write_json(writer, {"brightness": {"value": round(percent, 2), "approx": approx}})
+        BRIGHTNESS_QUEUE.task_done()
+
+
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""
     SERVICE = "net.hadess.PowerProfiles"
@@ -348,6 +412,11 @@ async def main():
     global DBUS_THREAD
     DBUS_THREAD = threading.Thread(target=dbus_thread_worker, args=(loop,), daemon=True)
     DBUS_THREAD.start()
+
+    # Start the Brightness worker thread
+    global BRIGHTNESS_THREAD
+    BRIGHTNESS_THREAD = threading.Thread(target=brightness_thread_worker, args=(loop,), daemon=True)
+    BRIGHTNESS_THREAD.start()
 
     # Create stream reader and writer for stdin/stdout
     reader = asyncio.StreamReader()
