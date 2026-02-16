@@ -17,6 +17,8 @@
               ps.psutil
               ps.dbus-python
               ps.pygobject3
+              ps.pyudev
+              ps.pulsectl-asyncio
             ]))
             pkgs.gobject-introspection
           ];

@@ -75,7 +75,8 @@ ShellRoot {
         "bat": { "value": "XX", "approx": "050", "charging": true },
         "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
         "power_profile": "balanced",
-        "brightness": { "value": 0.01, "approx": "low" }
+        "brightness": { "value": 0.01, "approx": "low" },
+        "volume": { "value": 0.01, "approx": "low" }
     })
 
     function recursiveUpdate(target, source) {
@@ -475,7 +476,7 @@ ShellRoot {
                             IconImage {
                                 anchors.verticalCenter: parent.verticalCenter
                                 source: Quickshell.iconPath(`brightness-${root.sysStats.brightness.approx}-symbolic`)
-                                implicitSize: 17
+                                implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
                                     color: colors.accent
@@ -494,7 +495,7 @@ ShellRoot {
 
                             IconImage {
                                 anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("audio-volume-high-symbolic")
+                                source: Quickshell.iconPath(`audio-volume-${root.sysStats.volume.approx}-symbolic`)
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
@@ -504,6 +505,7 @@ ShellRoot {
 
                             MyThermo {
                                 anchors.verticalCenter: parent.verticalCenter
+                                progressValue: root.sysStats.volume.value
                             }
                         }
                     }
