@@ -517,7 +517,10 @@ ShellRoot {
                 
                 MyCapsule {
                     id: trayCapsule
+                    implicitHeight: Math.max(trayColumn.implicitHeight + 8, 10)
+
                     Column {
+                        id: trayColumn
                         anchors.centerIn: parent
                         Repeater {
                             model: SystemTray.items
