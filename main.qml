@@ -448,6 +448,7 @@ ShellRoot {
                                 font.bold: true
                                 Layout.alignment: Qt.AlignHCenter
                                 font.family: globalFont
+                                visible: root.sysStats.bat.value != 100
                             }
                         }
 
