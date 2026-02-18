@@ -3,6 +3,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
@@ -54,6 +55,91 @@ ShellRoot {
             Behavior on height {
                 NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
             }
+        }
+    }
+
+    component MyPopup: PopupWindow {
+        id: root
+        property Item target: null
+    
+        default property alias content: contentContainer.data
+
+        visible: false
+        width: 220
+        height: 160
+        color: "transparent"
+
+        anchor {
+            item: target
+            edges: Edges.Left | Edges.Top
+            gravity: Edges.Left | Edges.Bottom
+            adjustment: PopupAdjustment.Slide
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            color: colors.bg
+            border.color: colors.border
+            border.width: 2
+            radius: 8
+            opacity: 0.95
+
+            // 这里是内容插槽
+            Column {
+                id: contentContainer
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
+                // 外部定义的内容会显示在这里
+            }
+        }
+    }
+
+    component LineChart: Canvas {
+        id: chart
+        // 暴露给外部的接口
+        property real value: 0        // 当前数值 (0.0 - 1.0)
+        property color lineColor: root.colors.accent
+        property int maxPoints: 40
+
+        // 内部私有记忆
+        property var _history: []
+
+        // 核心逻辑：当外部传入的数值变化时，自动更新历史记录
+        onValueChanged: {
+            let data = _history;
+            data.push(value);
+            if (data.length > maxPoints) data.shift();
+            _history = data;
+            chart.requestPaint(); // 触发重绘
+        }
+
+        onPaint: {
+            var ctx = getContext("2d");
+            ctx.reset();
+            if (_history.length < 2) return;
+
+            let stepX = width / (maxPoints - 1);
+        
+            ctx.beginPath();
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < _history.length; i++) {
+                let x = i * stepX;
+                let y = height - (_history[i] * height);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            ctx.lineTo((_history.length - 1) * stepX, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            let grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.3));
+            grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad;
+            ctx.fill();
         }
     }
 
@@ -208,6 +294,8 @@ ShellRoot {
                 }
 
                 MyCapsule {
+                    id: monitorCapsule
+
                     Column {
                         anchors.centerIn: parent
                         spacing: 4
@@ -272,6 +360,39 @@ ShellRoot {
                             }
                         }
                     }
+
+                    TapHandler {
+                        onTapped: monitorDetailPopup.visible = !monitorDetailPopup.visible
+                    }
+
+                    MyPopup {
+                        target: monitorCapsule
+                        id: monitorDetailPopup
+                        Row {
+                            spacing: 5
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: Quickshell.iconPath("cpu-symbolic")
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: colors.accent
+                                }
+                            }
+                            Text {
+                                text: "CPU:"
+                                color: colors.fg
+                            }
+                        }
+
+                        LineChart {
+                            width: parent.width
+                            height: 40
+                            value: root.sysStats.cpu
+                            lineColor: root.colors.accent
+                        }
+                    }
+
                 }
 
                 MyCapsule {
@@ -591,6 +712,65 @@ ShellRoot {
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
                             font.family: globalFont
+                        }
+                    }
+
+                    
+                    TapHandler {
+                        onTapped: clockDetailPopup.visible = !clockDetailPopup.visible
+                    }
+
+                    MyPopup {
+                        target: clockCapsule
+                        id: clockDetailPopup
+                        height: 240
+                        Text {
+                            text: Qt.formatDateTime(new Date(), "dd, MM, yyyy")
+                            color: colors.fg
+                            font.pixelSize: 20
+                            font.family: globalFont
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        DayOfWeekRow {
+                            locale: Qt.locale("zh_CN")
+                            width: parent.width
+        
+                            delegate: Text {
+                                text: model.narrowName
+                                font.bold: true
+                                font.pixelSize: 14
+                                font.family: globalFont
+                                color: colors.accent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+
+                        MonthGrid {
+                            id: grid
+                            width: parent.width
+                            locale: Qt.locale("zh_CN")
+        
+                            month: new Date().getMonth()
+                            year: new Date().getFullYear()
+
+                            delegate: Rectangle {
+                                implicitWidth: 25
+                                implicitHeight: 25
+                                radius: 4
+                                color: "transparent"
+                                border.width: model.today ? 1 : 0
+                                border.color: colors.fg
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: model.day
+                                    opacity: model.month === grid.month ? 1.0 : 0.5
+                                    color: model.today ? colors.accent : colors.fg
+                                    font.pixelSize: 14
+                                }
+                            }
                         }
                     }
                 }
