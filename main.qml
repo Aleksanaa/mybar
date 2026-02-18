@@ -10,6 +10,7 @@ import Quickshell.Io
 import QtQuick.Effects
 import Quickshell.Widgets
 import Quickshell.Services.SystemTray
+import Quickshell.Services.Pipewire
 import Qt5Compat.GraphicalEffects
 import Niri 0.1
 
@@ -140,6 +141,68 @@ ShellRoot {
             grad.addColorStop(1, "transparent");
             ctx.fillStyle = grad;
             ctx.fill();
+        }
+    }
+
+    component MySlider: Slider {
+        id: customSlider
+        value: 0
+        onMoved: {
+        }
+        handle: Rectangle {
+            x: customSlider.leftPadding + customSlider.visualPosition * (customSlider.availableWidth - width)
+            y: customSlider.topPadding + customSlider.availableHeight / 2 - height / 2
+            implicitWidth: 14
+            implicitHeight: 14
+            radius: 7
+            color: colors.fg 
+        }
+
+        background: Rectangle {
+            x: customSlider.leftPadding
+            y: customSlider.topPadding + customSlider.availableHeight / 2 - height / 2
+            implicitWidth: 100
+            implicitHeight: 4
+            width: customSlider.availableWidth
+            height: implicitHeight
+            radius: 2
+            color: colors.border
+
+            Rectangle {
+                width: customSlider.visualPosition * customSlider.width
+                height: parent.height
+                color: colors.accent
+                radius: 2
+            }
+        }
+    }
+
+    component MyCombo: ComboBox {
+        id: myCombo
+        width: 200
+
+        textRole: "name" 
+
+        background: Rectangle {
+            implicitWidth: 200
+            implicitHeight: 30
+            color: colors.bg
+            border.color: myCombo.visualFocus ? colors.accent : colors.border
+            border.width: 1
+            radius: 4
+        }
+
+        delegate: ItemDelegate {
+            width: myCombo.width
+            contentItem: Text {
+                text: modelData.name
+                color: highlighted ? colors.accent : colors.fg
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle {
+                color: highlighted ? colors.accent : "transparent"
+            }
         }
     }
 
@@ -587,6 +650,7 @@ ShellRoot {
 
                 
                 MyCapsule {
+                    id: adjustCapsule
                     Column {
                         anchors.centerIn: parent
                         spacing: 4
@@ -630,6 +694,55 @@ ShellRoot {
                                 progressValue: root.sysStats.volume.value
                             }
                         }
+                    }
+
+                    TapHandler {
+                        onTapped: adjustDetailPopup.visible = !adjustDetailPopup.visible
+                    }
+
+                    MyPopup {
+                        target: adjustCapsule
+                        id: adjustDetailPopup
+
+                        Row {
+                            spacing: 5
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: Quickshell.iconPath("brightness-symbolic")
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: colors.accent
+                                }
+                            }
+                            Text {
+                                text: "Brightness:"
+                                color: colors.fg
+                            }
+                        }
+
+                        MySlider {}
+
+                        Row {
+                            spacing: 5
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: Quickshell.iconPath("volume-symbolic")
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: colors.accent
+                                }
+                            }
+                            Text {
+                                text: "Volume:"
+                                color: colors.fg
+                            }
+                        }
+
+                        MySlider {}
+
+                        MyCombo {}
                     }
                 }
 
