@@ -64,8 +64,9 @@ ShellRoot {
         property Item target: null
     
         default property alias content: contentContainer.data
+        property bool active: panel.currentPopup === root
 
-        visible: false
+        visible: active
         width: 220
         height: 160
         color: "transparent"
@@ -284,6 +285,16 @@ ShellRoot {
 
         exclusionMode: ExclusionMode.Exclusive
 
+        // Holds the currently visible popup object. null means none are open.
+        property QtObject currentPopup: null
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: panel.currentPopup !== null
+            z: 998 
+            onPressed: panel.currentPopup = null // Clearing this closes the popup
+        }
+
         RectangularShadow {
             anchors.fill: contentRect
             radius: contentRect.radius
@@ -292,6 +303,11 @@ ShellRoot {
             color: "#B811111b"
             z: -1
         }
+
+        TrayMenu {
+            id: globalTrayMenu
+        }
+
         
         Rectangle {
             id: contentRect
@@ -425,7 +441,7 @@ ShellRoot {
                     }
 
                     TapHandler {
-                        onTapped: monitorDetailPopup.visible = !monitorDetailPopup.visible
+                        onTapped: panel.currentPopup = monitorDetailPopup
                     }
 
                     MyPopup {
@@ -697,7 +713,7 @@ ShellRoot {
                     }
 
                     TapHandler {
-                        onTapped: adjustDetailPopup.visible = !adjustDetailPopup.visible
+                        onTapped: panel.currentPopup = adjustDetailPopup
                     }
 
                     MyPopup {
@@ -780,7 +796,9 @@ ShellRoot {
                                 function showMenu(mouse) {
                                     const win = QsWindow.window;
                                     const pos = mapToItem(win.contentItem, mouse.x, mouse.y);
-                                    modelData.display(win, pos.x, pos.y);
+                                    globalTrayMenu.menuHandle = modelData.menu;
+                                    globalTrayMenu.showAt(parent, panel.screen);
+                                    // modelData.display(win, pos.x, pos.y);
                                 }
 
                                 // 处理交互
@@ -830,7 +848,7 @@ ShellRoot {
 
                     
                     TapHandler {
-                        onTapped: clockDetailPopup.visible = !clockDetailPopup.visible
+                        onTapped: panel.currentPopup = clockDetailPopup
                     }
 
                     MyPopup {
