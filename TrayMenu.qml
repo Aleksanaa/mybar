@@ -6,21 +6,21 @@ import Quickshell
 PopupWindow {
     id: root
 
-    // --- 可配置样式 ---
+    // --- 样式配置 ---
     property color backgroundColor: "#2d2d2d"
     property color borderColor: "#444444"
     property color textColor: "#ffffff"
     property color highlightColor: "#3d3d3d"
-    property int menuWidth: 200
-    property int itemHeight: 30
-    property int borderRadius: 8
+    property int menuWidth: 220 // 增加一点宽度以容纳图标
+    property int itemHeight: 28
+    property int iconSize: 18    // 菜单项图标大小
+    property int borderRadius: 6
     property int padding: 4
 
-    // 核心数据
+    // --- 数据与状态 ---
     property var menuHandle: null
     property bool isSubMenu: false
-    // 重要：Quickshell 窗口通常需要 screen 属性来确定位置
-    property var screen: null 
+    property var screen: Screens.primary
 
     implicitWidth: menuWidth
     implicitHeight: columnLayout.implicitHeight + (padding * 2)
@@ -28,14 +28,14 @@ PopupWindow {
     color: "transparent"
     visible: false
 
-    // 菜单打开时请求焦点，以便支持键盘关闭
     onVisibleChanged: {
         if (visible) root.forceActiveFocus();
     }
 
     Item {
         anchors.fill: parent
-        Keys.onEscapePressed: root.visible = false;
+        focus: root.visible
+        Keys.onEscapePressed: root.closeAll()
     }
 
     QsMenuOpener {
@@ -84,22 +84,38 @@ PopupWindow {
                     anchors.rightMargin: 8
                     spacing: 8
 
+                    // 1. 勾选状态指示器
                     Text {
                         text: (modelData.checkState === Qt.Checked || modelData.checked) ? "✓" : ""
                         color: root.textColor
                         font.pixelSize: 14
-                        width: 12
+                        Layout.preferredWidth: 12
                     }
 
+                    // 2. 菜单图标 (新增部分)
+                    Image {
+                        source: modelData.icon || "" // 自动处理图标路径
+                        Layout.preferredWidth: root.iconSize
+                        Layout.preferredHeight: root.iconSize
+                        fillMode: Image.PreserveAspectFit
+                        visible: source != "" // 如果没有图标则隐藏
+                        
+                        // 某些图标可能来自本地路径或系统主题，Qt 会尝试自动解析
+                        asynchronous: true 
+                    }
+
+                    // 3. 菜单文字
                     Text {
                         Layout.fillWidth: true
                         text: modelData.text ? modelData.text.replace(/&/g, "") : ""
                         color: modelData.enabled ? root.textColor : "#888888"
+                        font.pixelSize: 13
                         elide: Text.ElideRight
                     }
 
+                    // 4. 子菜单箭头
                     Text {
-                        text: modelData.hasChildren ? "▶" : ""
+                        text: "▶"
                         color: root.textColor
                         font.pixelSize: 10
                         visible: modelData.hasChildren
@@ -114,7 +130,6 @@ PopupWindow {
                     
                     onClicked: {
                         if (modelData.hasChildren) {
-                            // --- 修正：使用动态创建来避免递归实例化错误 ---
                             var component = Qt.createComponent(Qt.resolvedUrl("TrayMenu.qml"));
                             if (component.status === Component.Ready) {
                                 var sub = component.createObject(root, {
@@ -129,9 +144,7 @@ PopupWindow {
                                     "anchor.rect.x": itemDelegate.width,
                                     "anchor.rect.y": 0
                                 });
-                                sub.visible = true;
-                            } else {
-                                console.error("Error loading sub-menu:", component.errorString());
+                                sub.visible = true; 
                             }
                         } else {
                             modelData.triggered();
@@ -143,19 +156,17 @@ PopupWindow {
         }
     }
 
-    // 递归关闭所有层级的菜单
     function closeAll() {
         root.visible = false;
-        // 这里的 parent 在动态创建时是上一级菜单
         if (root.parent && typeof root.parent.closeAll === "function") {
             root.parent.closeAll();
         }
     }
 
-    // 外部调用：传入锚点 item 和当前的屏幕对象
     function showAt(anchorItem, screenObj) {
+        if (!anchorItem) return;
         root.anchor.item = anchorItem;
-        root.screen = screenObj;
+        if (screenObj) root.screen = screenObj;
         root.visible = true;
     }
 }
