@@ -148,8 +148,6 @@ ShellRoot {
     component MySlider: Slider {
         id: customSlider
         value: 0
-        onMoved: {
-        }
         handle: Rectangle {
             x: customSlider.leftPadding + customSlider.visualPosition * (customSlider.availableWidth - width)
             y: customSlider.topPadding + customSlider.availableHeight / 2 - height / 2
@@ -306,6 +304,12 @@ ShellRoot {
 
         TrayMenu {
             id: globalTrayMenu
+            backgroundColor: colors.bg
+            borderColor: colors.border
+            textColor: colors.fg
+            highlightColor: colors.accent
+            borderRadius: 8
+            visible: panel.currentPopup === globalTrayMenu
         }
 
         
@@ -794,11 +798,9 @@ ShellRoot {
                                 }
 
                                 function showMenu(mouse) {
-                                    const win = QsWindow.window;
-                                    const pos = mapToItem(win.contentItem, mouse.x, mouse.y);
+                                    panel.currentPopup = globalTrayMenu
                                     globalTrayMenu.menuHandle = modelData.menu;
                                     globalTrayMenu.showAt(parent, panel.screen);
-                                    // modelData.display(win, pos.x, pos.y);
                                 }
 
                                 // 处理交互

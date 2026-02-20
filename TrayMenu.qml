@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Qt5Compat.GraphicalEffects
 
 PopupWindow {
     id: root
@@ -11,9 +12,9 @@ PopupWindow {
     property color borderColor: "#444444"
     property color textColor: "#ffffff"
     property color highlightColor: "#3d3d3d"
-    property int menuWidth: 220 // 增加一点宽度以容纳图标
-    property int itemHeight: 28
-    property int iconSize: 18    // 菜单项图标大小
+    property int menuWidth: 220 
+    property int itemHeight: 32
+    property int iconSize: 18
     property int borderRadius: 6
     property int padding: 4
 
@@ -27,6 +28,11 @@ PopupWindow {
     
     color: "transparent"
     visible: false
+
+    // 锚点系统配置 (核心修改点)
+    // 对于一级菜单，我们将它的右上角对齐到触发点
+    anchor.rect.x: isSubMenu ? -width : -width // 子菜单向左偏移，一级菜单右上角对齐
+    anchor.rect.y: isSubMenu ? 0 : 4          // 一级菜单向下留出一点空隙
 
     onVisibleChanged: {
         if (visible) root.forceActiveFocus();
@@ -84,24 +90,23 @@ PopupWindow {
                     anchors.rightMargin: 8
                     spacing: 8
 
-                    // 1. 勾选状态指示器
+                    // 1. 子菜单指示箭头 (现在放在左边，因为菜单往左展开)
                     Text {
-                        text: (modelData.checkState === Qt.Checked || modelData.checked) ? "✓" : ""
+                        text: "◀"
                         color: root.textColor
-                        font.pixelSize: 14
-                        Layout.preferredWidth: 12
+                        font.pixelSize: 10
+                        visible: modelData.hasChildren
+                        Layout.preferredWidth: 10
                     }
 
-                    // 2. 菜单图标 (新增部分)
+                    // 2. 菜单图标
                     Image {
-                        source: modelData.icon || "" // 自动处理图标路径
+                        source: modelData.icon || ""
                         Layout.preferredWidth: root.iconSize
                         Layout.preferredHeight: root.iconSize
                         fillMode: Image.PreserveAspectFit
-                        visible: source != "" // 如果没有图标则隐藏
-                        
-                        // 某些图标可能来自本地路径或系统主题，Qt 会尝试自动解析
-                        asynchronous: true 
+                        visible: source != ""
+                        asynchronous: true
                     }
 
                     // 3. 菜单文字
@@ -113,12 +118,12 @@ PopupWindow {
                         elide: Text.ElideRight
                     }
 
-                    // 4. 子菜单箭头
+                    // 4. 勾选状态 (放在右边)
                     Text {
-                        text: "▶"
+                        text: (modelData.checkState === Qt.Checked || modelData.checked) ? "✓" : ""
                         color: root.textColor
-                        font.pixelSize: 10
-                        visible: modelData.hasChildren
+                        font.pixelSize: 14
+                        Layout.preferredWidth: 12
                     }
                 }
 
@@ -140,9 +145,8 @@ PopupWindow {
                                     "borderColor": root.borderColor,
                                     "textColor": root.textColor,
                                     "highlightColor": root.highlightColor,
-                                    "anchor.item": itemDelegate,
-                                    "anchor.rect.x": itemDelegate.width,
-                                    "anchor.rect.y": 0
+                                    "anchor.item": itemDelegate
+                                    // 注意：这里不再手动传 x,y，依靠 root.anchor 系统自动对齐
                                 });
                                 sub.visible = true; 
                             }
