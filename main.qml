@@ -290,7 +290,24 @@ ShellRoot {
             anchors.fill: parent
             enabled: panel.currentPopup !== null
             z: 998 
-            onPressed: panel.currentPopup = null // Clearing this closes the popup
+            onPressed: {
+                if (panel.currentPopup) {
+                    // Function to find the top-most active menu in a chain
+                    function findTopMenu(menu) {
+                        if (menu && menu.activeSubMenu) {
+                            return findTopMenu(menu.activeSubMenu);
+                        }
+                        return menu;
+                    }
+                    var topMenu = findTopMenu(panel.currentPopup);
+                    // The closeAll function recursively closes parents up the chain
+                    if (topMenu && typeof topMenu.closeAll === "function") {
+                        topMenu.closeAll();
+                    }
+                    // Finally, clear the popup state in the panel
+                    panel.currentPopup = null;
+                }
+            } // Clearing this closes the popup
         }
 
         RectangularShadow {
