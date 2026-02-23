@@ -275,7 +275,7 @@ ShellRoot {
     }
 
     function writeOutput(event) {
-        root.pyMonitor.stdin.write(JSON.stringify(event) + "\n");
+        pyMonitor.write(JSON.stringify(event) + "\n");
     }
 
     PanelWindow {
@@ -589,6 +589,9 @@ ShellRoot {
                             color: "#f38ba8"
                         }
                     }
+                    TapHandler {
+                        onTapped: writeOutput({ "action": "close-window" })
+                    }
                 }
                 MyCapsule {
                     height: 42
@@ -601,6 +604,9 @@ ShellRoot {
                             color: "#f9e2af"
                         }
                     }
+                    TapHandler {
+                        onTapped: writeOutput({ "action": "maximize-column" })
+                    }
                 }
                 MyCapsule {
                     height: 42
@@ -612,6 +618,9 @@ ShellRoot {
                         layer.effect: ColorOverlay {
                             color: "#a6e3a1"
                         }
+                    }
+                    TapHandler {
+                        onTapped: writeOutput({ "action": "toggle-fullscreen" })
                     }
                 }
                 MyCapsule {

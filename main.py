@@ -1,4 +1,5 @@
 import sys
+import os
 import json
 import asyncio
 import functools
@@ -10,6 +11,61 @@ from gi.repository import GLib
 import threading
 import pyudev
 from pulsectl_asyncio import PulseAsync
+
+class NiriConnection:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(NiriConnection, cls).__new__(cls)
+            cls._instance.socket_path = os.environ.get("NIRI_SOCKET")
+            cls._instance.reader = None
+            cls._instance.writer = None
+            cls._instance.lock = asyncio.Lock()
+        return cls._instance
+
+    async def _connect(self):
+        if not self.socket_path:
+            return False
+        try:
+            self.reader, self.writer = await asyncio.open_unix_connection(self.socket_path)
+            return True
+        except Exception as e:
+            print(f"Error connecting to niri socket: {e}", file=sys.stderr)
+            return False
+
+    async def send(self, data):
+        """
+        Sends a Python object as JSON to the niri socket. This is a "fire-and-forget" operation
+        that does not wait for a reply to avoid blocking.
+        """
+        if not self.socket_path:
+            return {"error": "NIRI_SOCKET environment variable not set"}
+
+        async with self.lock:
+            if self.writer is None:
+                if not await self._connect():
+                    return {"error": "Could not connect to niri socket"}
+
+            try:
+                # Send request and append a newline
+                self.writer.write(json.dumps(data).encode('utf-8') + b'\n')
+                await self.writer.drain()
+
+            except Exception as e:
+                # Invalidate connection on error
+                if self.writer:
+                    try:
+                        self.writer.close()
+                        await self.writer.wait_closed()
+                    except Exception:
+                        pass
+                self.writer = None
+                self.reader = None
+                print(f"Error sending to niri socket: {e}", file=sys.stderr)
+                return {"error": str(e)}
+        return None
+
 # --- D-Bus setup for threaded execution ---
 DBUS_QUEUE = asyncio.Queue()
 DBUS_THREAD = None
@@ -165,34 +221,6 @@ async def write_json(writer, data):
     """Asynchronously write a JSON object to a stream writer."""
     writer.write(json.dumps(data).encode('utf-8') + b'\n')
     await writer.drain()
-
-@action_handler("echo")
-async def handle_echo(data, writer):
-    """Echoes the input data back to the writer."""
-    response = {
-        "status": "success",
-        "action": "echo",
-        "original_payload": data
-    }
-    await write_json(writer, response)
-
-@action_handler("reverse")
-async def handle_reverse(data, writer):
-    """Reverses the 'payload' string in the input data."""
-    if "payload" in data and isinstance(data["payload"], str):
-        response = {
-            "status": "success",
-            "action": "reverse",
-            "reversed_payload": data["payload"][::-1]
-        }
-    else:
-        response = {
-            "status": "error",
-            "action": "reverse",
-            "message": "Missing or invalid 'payload' field for reverse action."
-        }
-    await write_json(writer, response)
-
 
 def _format_speed(speed_bps):
     """Formats speed in bytes per second to a human-readable string with specific length constraints."""
@@ -418,16 +446,30 @@ async def set_power_profile(data, writer):
     """Sets the power profile via D-Bus using a thread."""
     profile_to_set = data.get("profile")
     if not profile_to_set:
-        await write_json(writer, {"status": "error", "message": "Missing 'profile' field."})
+        print("Error: Missing 'profile' field in set_power_profile", file=sys.stderr)
         return
 
     try:
         await asyncio.to_thread(_set_power_profile_blocking, profile_to_set)
-        await write_json(writer, {"status": "success", "action": "set_power_profile", "profile": profile_to_set})
     except dbus.exceptions.DBusException as e:
-        await write_json(writer, {"status": "error", "message": f"Failed to set power profile: {e}"})
+        print(f"Error: Failed to set power profile: {e}", file=sys.stderr)
     except Exception as e:
-        await write_json(writer, {"status": "error", "message": f"An unexpected error occurred: {e}"})
+        print(f"Error: An unexpected error occurred setting power profile: {e}", file=sys.stderr)
+
+@action_handler("close-window")
+async def handle_close_window(data, writer):
+    """Closes the currently focused window."""
+    await NiriConnection().send({"Action": {"CloseWindow": {"id": None}}})
+
+@action_handler("maximize-column")
+async def handle_maximize_column(data, writer):
+    """Maximizes the currently focused column."""
+    await NiriConnection().send({"Action": {"MaximizeColumn": {}}})
+
+@action_handler("toggle-fullscreen")
+async def handle_toggle_fullscreen(data, writer):
+    """Toggles fullscreen mode for the currently focused window."""
+    await NiriConnection().send({"Action": {"FullscreenWindow": {"id": None}}})
 
 
 async def read_stdin(reader, writer):
