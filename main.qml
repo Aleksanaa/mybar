@@ -300,14 +300,14 @@ ShellRoot {
             } // Clearing this closes the popup
         }
 
-        RectangularShadow {
-            anchors.fill: contentRect
-            radius: contentRect.radius
-            blur: 5
-            spread: 0.1
-            color: "#B811111b"
-            z: -1
-        }
+        // RectangularShadow {
+        //     anchors.fill: contentRect
+        //     radius: contentRect.radius
+        //     blur: 5
+        //     spread: 0.1
+        //     color: "#B811111b"
+        //     z: -1
+        // }
 
         TrayMenu {
             id: globalTrayMenu
@@ -326,12 +326,12 @@ ShellRoot {
                 fill: parent
                 topMargin: 8
                 bottomMargin: 8
-                leftMargin: 4
+                leftMargin: 0
                 rightMargin: 4
             }
             radius: 8
 
-            color: "#B81e1e2e"
+            color: "#f51e1e2e"
             border.color: colors.border
             border.width: 1
 
