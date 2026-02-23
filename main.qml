@@ -787,7 +787,7 @@ ShellRoot {
                                 visible: modelData.status !== 0
 
                                 IconImage {
-                                    width: modelData.id.includes("Telegram") ? 15 : 20
+                                    width: modelData.id.includes("Telegram") ? 16 : 20
                                     height: 20
                                     anchors.centerIn: parent
                                     source: modelData.icon || Quickshell.iconPath("image-missing")

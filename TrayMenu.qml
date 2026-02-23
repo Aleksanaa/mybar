@@ -22,6 +22,7 @@ PopupWindow {
     property var menuHandle: null
     property bool isSubMenu: false
     property var screen: Screens.primary
+    property var activeSubMenu: null
 
     implicitWidth: menuWidth
     implicitHeight: columnLayout.implicitHeight + (padding * 2)
@@ -35,7 +36,10 @@ PopupWindow {
     anchor.rect.y: isSubMenu ? 0 : 4          // 一级菜单向下留出一点空隙
 
     onVisibleChanged: {
-        if (visible) root.forceActiveFocus();
+        // When the menu is hidden, ensure any active child submenus are also closed.
+        if (!visible && root.activeSubMenu) {
+            root.activeSubMenu.closeAll();
+        }
     }
 
     Item {
@@ -55,6 +59,19 @@ PopupWindow {
         border.color: root.borderColor
         border.width: 1
         radius: root.borderRadius
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        // This MouseArea should be on top of other items when a submenu is active
+        z: 1 
+        enabled: root.activeSubMenu !== null // Only active when a submenu is open
+        onClicked: {
+            // If there's an active submenu, close it
+            if (root.activeSubMenu && root.activeSubMenu.visible) {
+                root.activeSubMenu.closeAll();
+            }
+        }
     }
 
     ColumnLayout {
@@ -137,16 +154,22 @@ PopupWindow {
                         if (modelData.hasChildren) {
                             var component = Qt.createComponent(Qt.resolvedUrl("TrayMenu.qml"));
                             if (component.status === Component.Ready) {
-                                var sub = component.createObject(root, {
+                                var parentMenu = root; // Capture root context
+                                var sub = component.createObject(parentMenu, {
                                     "menuHandle": modelData,
                                     "isSubMenu": true,
-                                    "screen": root.screen,
-                                    "backgroundColor": root.backgroundColor,
-                                    "borderColor": root.borderColor,
-                                    "textColor": root.textColor,
-                                    "highlightColor": root.highlightColor,
+                                    "screen": parentMenu.screen,
+                                    "backgroundColor": parentMenu.backgroundColor,
+                                    "borderColor": parentMenu.borderColor,
+                                    "textColor": parentMenu.textColor,
+                                    "highlightColor": parentMenu.highlightColor,
                                     "anchor.item": itemDelegate
-                                    // 注意：这里不再手动传 x,y，依靠 root.anchor 系统自动对齐
+                                });
+                                parentMenu.activeSubMenu = sub; // Keep track of the active submenu
+                                sub.onVisibleChanged.connect(function() {
+                                    if (!sub.visible) {
+                                        parentMenu.activeSubMenu = null; // Clear when submenu closes
+                                    }
                                 });
                                 sub.visible = true; 
                             }
