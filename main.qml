@@ -324,7 +324,7 @@ ShellRoot {
             backgroundColor: colors.bg
             borderColor: colors.border
             textColor: colors.fg
-            highlightColor: colors.accent
+            highlightColor: colors.border
             borderRadius: 8
             visible: panel.currentPopup === globalTrayMenu
         }
