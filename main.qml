@@ -264,6 +264,16 @@ ShellRoot {
         }
     }
 
+    Process {
+        id: vicinae
+        command: ["vicinae", "toggle"]
+    }
+
+    Process {
+        id: swaync
+        command: ["swaync-client", "-op"]
+    }
+
     function writeOutput(event) {
         root.pyMonitor.stdin.write(JSON.stringify(event) + "\n");
     }
@@ -279,7 +289,7 @@ ShellRoot {
 
         color: "transparent"
 
-        width: 48
+        width: 44
 
         exclusionMode: ExclusionMode.Exclusive
 
@@ -324,14 +334,14 @@ ShellRoot {
             id: contentRect
             anchors {
                 fill: parent
-                topMargin: 8
-                bottomMargin: 8
-                leftMargin: 0
-                rightMargin: 4
+                // topMargin: 8
+                // bottomMargin: 8
+                // leftMargin: 4
+                // rightMargin: 8
             }
-            radius: 8
+            radius: 0
 
-            color: "#f51e1e2e"
+            color: "#ef1e1e2e"
             border.color: colors.border
             border.width: 1
 
@@ -343,6 +353,10 @@ ShellRoot {
                     source: Qt.resolvedUrl("nix-snowflake-colours.svg")
                     implicitSize: 28
                     anchors.horizontalCenter: parent.horizontalCenter
+
+                    TapHandler {
+                        onTapped: vicinae.running = true
+                    }
                 }
 
                 Column {
@@ -358,9 +372,8 @@ ShellRoot {
                                 color: colors.fg
                                 font.pixelSize: 16
                             }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: niri.focusWorkspaceById(model.id)
+                            TapHandler {
+                                onTapped: niri.focusWorkspaceById(model.id)
                             }
                         }
                     }
@@ -630,6 +643,10 @@ ShellRoot {
                         layer.effect: ColorOverlay {
                             color: "#b4befe"
                         }
+                    }
+
+                    TapHandler {
+                        onTapped: swaync.running = true
                     }
                 }
 
