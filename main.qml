@@ -292,19 +292,9 @@ ShellRoot {
             z: 998 
             onPressed: {
                 if (panel.currentPopup) {
-                    // Function to find the top-most active menu in a chain
-                    function findTopMenu(menu) {
-                        if (menu && menu.activeSubMenu) {
-                            return findTopMenu(menu.activeSubMenu);
-                        }
-                        return menu;
+                    if (typeof panel.currentPopup.closeAll === "function") {
+                        panel.currentPopup.closeAll()
                     }
-                    var topMenu = findTopMenu(panel.currentPopup);
-                    // The closeAll function recursively closes parents up the chain
-                    if (topMenu && typeof topMenu.closeAll === "function") {
-                        topMenu.closeAll();
-                    }
-                    // Finally, clear the popup state in the panel
                     panel.currentPopup = null;
                 }
             } // Clearing this closes the popup
