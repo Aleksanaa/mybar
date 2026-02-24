@@ -13,197 +13,13 @@ import Quickshell.Services.SystemTray
 import Quickshell.Services.Pipewire
 import Qt5Compat.GraphicalEffects
 import Niri 0.1
+import "components"
 
 
 ShellRoot {
     id: root
     
-    readonly property var colors: {
-        "bg": "#1e1e2e",
-        "fg": "#cdd6f4",
-        "capsule": "#45475a",
-        "accent": "#89b4fa",
-        "border": "#313244",
-        "clock": "#a6e3a1",
-    }
 
-    readonly property string globalFont: "JetBrainsMono Nerd Font Propo"
-
-    component MyCapsule: Rectangle {
-        width: 32
-        height: childrenRect.height + 8
-        radius: 6
-        color: colors.bg
-        border.color: "#45475a"
-        border.width: 2
-        opacity: 1
-    }
-
-    component MyThermo: Rectangle {
-        id: thermoRoot
-        width: 6
-        height: 20
-        color: "#585b70"
-        // radius: 3
-
-        property real progressValue: 0
-
-        Rectangle {
-            width: parent.width
-            height: parent.height * thermoRoot.progressValue
-            anchors.bottom: parent.bottom
-            color: colors.accent
-            Behavior on height {
-                NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-            }
-        }
-    }
-
-    component MyPopup: PopupWindow {
-        id: root
-        property Item target: null
-    
-        default property alias content: contentContainer.data
-        property bool active: panel.currentPopup === root
-
-        visible: active
-        width: 220
-        height: 160
-        color: "transparent"
-
-        anchor {
-            item: target
-            edges: Edges.Left | Edges.Top
-            gravity: Edges.Left | Edges.Bottom
-            adjustment: PopupAdjustment.Slide
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            color: colors.bg
-            border.color: colors.border
-            border.width: 2
-            radius: 8
-            opacity: 0.95
-
-            // 这里是内容插槽
-            Column {
-                id: contentContainer
-                anchors.fill: parent
-                anchors.margins: 10
-                spacing: 8
-                // 外部定义的内容会显示在这里
-            }
-        }
-    }
-
-    component LineChart: Canvas {
-        id: chart
-        // 暴露给外部的接口
-        property real value: 0        // 当前数值 (0.0 - 1.0)
-        property color lineColor: root.colors.accent
-        property int maxPoints: 40
-
-        // 内部私有记忆
-        property var _history: []
-
-        // 核心逻辑：当外部传入的数值变化时，自动更新历史记录
-        onValueChanged: {
-            let data = _history;
-            data.push(value);
-            if (data.length > maxPoints) data.shift();
-            _history = data;
-            chart.requestPaint(); // 触发重绘
-        }
-
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.reset();
-            if (_history.length < 2) return;
-
-            let stepX = width / (maxPoints - 1);
-        
-            ctx.beginPath();
-            ctx.strokeStyle = lineColor;
-            ctx.lineWidth = 2;
-            for (let i = 0; i < _history.length; i++) {
-                let x = i * stepX;
-                let y = height - (_history[i] * height);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-
-            ctx.lineTo((_history.length - 1) * stepX, height);
-            ctx.lineTo(0, height);
-            ctx.closePath();
-            let grad = ctx.createLinearGradient(0, 0, 0, height);
-            grad.addColorStop(0, Qt.rgba(lineColor.r, lineColor.g, lineColor.b, 0.3));
-            grad.addColorStop(1, "transparent");
-            ctx.fillStyle = grad;
-            ctx.fill();
-        }
-    }
-
-    component MySlider: Slider {
-        id: customSlider
-        value: 0
-        handle: Rectangle {
-            x: customSlider.leftPadding + customSlider.visualPosition * (customSlider.availableWidth - width)
-            y: customSlider.topPadding + customSlider.availableHeight / 2 - height / 2
-            implicitWidth: 14
-            implicitHeight: 14
-            radius: 7
-            color: colors.fg 
-        }
-
-        background: Rectangle {
-            x: customSlider.leftPadding
-            y: customSlider.topPadding + customSlider.availableHeight / 2 - height / 2
-            implicitWidth: 100
-            implicitHeight: 4
-            width: customSlider.availableWidth
-            height: implicitHeight
-            radius: 2
-            color: colors.border
-
-            Rectangle {
-                width: customSlider.visualPosition * customSlider.width
-                height: parent.height
-                color: colors.accent
-                radius: 2
-            }
-        }
-    }
-
-    component MyCombo: ComboBox {
-        id: myCombo
-        width: 200
-
-        textRole: "name" 
-
-        background: Rectangle {
-            implicitWidth: 200
-            implicitHeight: 30
-            color: colors.bg
-            border.color: myCombo.visualFocus ? colors.accent : colors.border
-            border.width: 1
-            radius: 4
-        }
-
-        delegate: ItemDelegate {
-            width: myCombo.width
-            contentItem: Text {
-                text: modelData.name
-                color: highlighted ? colors.accent : colors.fg
-                elide: Text.ElideRight
-                verticalAlignment: Text.AlignVCenter
-            }
-            background: Rectangle {
-                color: highlighted ? colors.accent : "transparent"
-            }
-        }
-    }
 
     Item {
         Niri {
@@ -321,10 +137,10 @@ ShellRoot {
 
         TrayMenu {
             id: globalTrayMenu
-            backgroundColor: colors.bg
-            borderColor: colors.border
-            textColor: colors.fg
-            highlightColor: colors.border
+            backgroundColor: Theme.bg
+            borderColor: Theme.border
+            textColor: Theme.fg
+            highlightColor: Theme.border
             borderRadius: 8
             visible: panel.currentPopup === globalTrayMenu
         }
@@ -342,7 +158,7 @@ ShellRoot {
             radius: 0
 
             color: "#ef1e1e2e"
-            border.color: colors.border
+            border.color: Theme.border
             border.width: 1
 
             ColumnLayout {
@@ -368,8 +184,8 @@ ShellRoot {
                             Text {
                                 text: model.index
                                 anchors.centerIn: parent
-                                font.family: globalFont
-                                color: colors.fg
+                                font.family: Theme.globalFont
+                                color: Theme.fg
                                 font.pixelSize: 16
                             }
                             TapHandler {
@@ -413,7 +229,7 @@ ShellRoot {
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -433,7 +249,7 @@ ShellRoot {
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -453,7 +269,7 @@ ShellRoot {
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -471,6 +287,7 @@ ShellRoot {
                     MyPopup {
                         target: monitorCapsule
                         id: monitorDetailPopup
+                        active: panel.currentPopup === monitorDetailPopup
                         Row {
                             spacing: 5
                             IconImage {
@@ -479,12 +296,12 @@ ShellRoot {
                                 implicitSize: 16
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
                             Text {
                                 text: "CPU:"
-                                color: colors.fg
+                                color: Theme.fg
                             }
                         }
 
@@ -492,7 +309,7 @@ ShellRoot {
                             width: parent.width
                             height: 40
                             value: root.sysStats.cpu
-                            lineColor: root.colors.accent
+                            lineColor: Theme.accent
                         }
                     }
 
@@ -515,7 +332,7 @@ ShellRoot {
                                 source: Quickshell.iconPath("go-up-symbolic")
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -525,16 +342,16 @@ ShellRoot {
                                 Text {
                                     text: root.sysStats.net.up
                                     font.pixelSize: 8
-                                    color: colors.fg
+                                    color: Theme.fg
                                     font.bold: true
-                                    font.family: globalFont
+                                    font.family: Theme.globalFont
                                 }
                                 Text {
                                     text: root.sysStats.net.up_unit
                                     font.pixelSize: 8
-                                    color:colors.fg
+                                    color:Theme.fg
                                     font.bold: true
-                                    font.family: globalFont
+                                    font.family: Theme.globalFont
                                 }
                             }
                         }
@@ -549,7 +366,7 @@ ShellRoot {
                                 source: Quickshell.iconPath("go-down-symbolic")
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -559,16 +376,16 @@ ShellRoot {
                                 Text {
                                     text: root.sysStats.net.down
                                     font.pixelSize: 8
-                                    color: colors.fg
+                                    color: Theme.fg
                                     font.bold: true
-                                    font.family: globalFont
+                                    font.family: Theme.globalFont
                                 }
                                 Text {
                                     text: root.sysStats.net.down_unit
                                     font.pixelSize: 8
-                                    color:colors.fg
+                                    color:Theme.fg
                                     font.bold: true
-                                    font.family: globalFont
+                                    font.family: Theme.globalFont
                                 }
                             }
                         }
@@ -673,7 +490,7 @@ ShellRoot {
                                 implicitSize: 17
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
                             Text {
@@ -681,10 +498,10 @@ ShellRoot {
                                 id: batPercentage
                                 text: root.sysStats.bat.value
                                 font.pixelSize: 10
-                                color: colors.fg
+                                color: Theme.fg
                                 font.bold: true
                                 Layout.alignment: Qt.AlignHCenter
-                                font.family: globalFont
+                                font.family: Theme.globalFont
                                 visible: root.sysStats.bat.value != 100
                             }
                         }
@@ -695,7 +512,7 @@ ShellRoot {
                             implicitSize: 17
                             layer.enabled: true
                             layer.effect: ColorOverlay {
-                                color: colors.accent
+                                color: Theme.accent
                             }
                         }
                     }
@@ -718,7 +535,7 @@ ShellRoot {
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -738,7 +555,7 @@ ShellRoot {
                                 implicitSize: 14
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
 
@@ -756,6 +573,7 @@ ShellRoot {
                     MyPopup {
                         target: adjustCapsule
                         id: adjustDetailPopup
+                        active: panel.currentPopup === adjustDetailPopup
 
                         Row {
                             spacing: 5
@@ -765,12 +583,12 @@ ShellRoot {
                                 implicitSize: 16
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
                             Text {
                                 text: "Brightness:"
-                                color: colors.fg
+                                color: Theme.fg
                             }
                         }
 
@@ -784,12 +602,12 @@ ShellRoot {
                                 implicitSize: 16
                                 layer.enabled: true
                                 layer.effect: ColorOverlay {
-                                    color: colors.accent
+                                    color: Theme.accent
                                 }
                             }
                             Text {
                                 text: "Volume:"
-                                color: colors.fg
+                                color: Theme.fg
                             }
                         }
 
@@ -864,20 +682,20 @@ ShellRoot {
                             id: hours
                             text: "00"
                             font.pixelSize: 24
-                            color: colors.accent
+                            color: Theme.accent
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
-                            font.family: globalFont
+                            font.family: Theme.globalFont
                         }
 
                         Text {
                             id: minutes
                             text: "00"
                             font.pixelSize: 24
-                            color: colors.fg
+                            color: Theme.fg
                             font.bold: true
                             Layout.alignment: Qt.AlignHCenter
-                            font.family: globalFont
+                            font.family: Theme.globalFont
                         }
                     }
 
@@ -889,12 +707,13 @@ ShellRoot {
                     MyPopup {
                         target: clockCapsule
                         id: clockDetailPopup
+                        active: panel.currentPopup === clockDetailPopup
                         height: 240
                         Text {
                             text: Qt.formatDateTime(new Date(), "dd, MM, yyyy")
-                            color: colors.fg
+                            color: Theme.fg
                             font.pixelSize: 20
-                            font.family: globalFont
+                            font.family: Theme.globalFont
                             Layout.alignment: Qt.AlignHCenter
                         }
 
@@ -906,8 +725,8 @@ ShellRoot {
                                 text: model.narrowName
                                 font.bold: true
                                 font.pixelSize: 14
-                                font.family: globalFont
-                                color: colors.accent
+                                font.family: Theme.globalFont
+                                color: Theme.accent
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -927,13 +746,13 @@ ShellRoot {
                                 radius: 4
                                 color: "transparent"
                                 border.width: model.today ? 1 : 0
-                                border.color: colors.fg
+                                border.color: Theme.fg
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: model.day
                                     opacity: model.month === grid.month ? 1.0 : 0.5
-                                    color: model.today ? colors.accent : colors.fg
+                                    color: model.today ? Theme.accent : Theme.fg
                                     font.pixelSize: 14
                                 }
                             }

@@ -1,0 +1,8 @@
+singleton Theme 1.0 Theme.qml
+MyCapsule 1.0 MyCapsule.qml
+MyThermo 1.0 MyThermo.qml
+MyPopup 1.0 MyPopup.qml
+LineChart 1.0 LineChart.qml
+MySlider 1.0 MySlider.qml
+MyCombo 1.0 MyCombo.qml
+TrayMenu 1.0 TrayMenu.qml
