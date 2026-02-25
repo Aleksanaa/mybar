@@ -532,6 +532,141 @@ ShellRoot {
                             }
                         }
                     }
+
+                    TapHandler {
+                        onTapped: panel.currentPopup = batDetailPopup
+                    }
+
+                    MyPopup {
+                        target: batCapsule
+                        id: batDetailPopup
+                        active: panel.currentPopup === batDetailPopup
+
+                        Row {
+                            spacing: 5
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: Quickshell.iconPath(`battery-${root.sysStats.bat.approx}${root.sysStats.bat.charging ? "-charging" : ""}-symbolic`)
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: Theme.accent
+                                }
+                            }
+                            Text {
+                                text: `Battery: ${root.sysStats.bat.value}%`
+                                color: Theme.fg
+                            }
+                        }
+
+                        Row {
+                            spacing: 5
+                            IconImage {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: Quickshell.iconPath("preferences-system-time-symbolic")
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: Theme.accent
+                                }
+                            }
+                            Text {
+                                text: {
+                                    let timeText = "";
+                                    if (root.sysStats.bat.state === 1 && root.sysStats.bat.time_to_full > 0) {
+                                        let hours = Math.floor(root.sysStats.bat.time_to_full / 3600);
+                                        let minutes = Math.floor((root.sysStats.bat.time_to_full % 3600) / 60);
+                                        timeText = `Full in ${hours} hours ${minutes} minutes`;
+                                    } else if (root.sysStats.bat.state === 2 && root.sysStats.bat.time_to_empty > 0) {
+                                        let hours = Math.floor(root.sysStats.bat.time_to_empty / 3600);
+                                        let minutes = Math.floor((root.sysStats.bat.time_to_empty % 3600) / 60);
+                                        timeText = `Empty in ${hours} hours ${minutes} minutes`;
+                                    } else if (root.sysStats.bat.state === 4) {
+                                        timeText = "Fully charged";
+                                    } else {
+                                        timeText = "Estimating...";
+                                    }
+                                    return timeText;
+                                }
+                                color: Theme.fg
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 5
+                            IconImage {
+                                Layout.alignment: Qt.AlignVCenter
+                                source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
+                                implicitSize: 16
+                                layer.enabled: true
+                                layer.effect: ColorOverlay {
+                                    color: Theme.accent
+                                }
+                            }
+                            MyCombo {
+                                Layout.fillWidth: true
+                                model: [
+                                    { name: "Power Saver", id: "power-saver" },
+                                    { name: "Balanced", id: "balanced" },
+                                    { name: "Performance", id: "performance" }
+                                ]
+                                currentIndex: {
+                                    let prof = root.sysStats.power_profile;
+                                    if (prof === "power-saver") return 0;
+                                    if (prof === "balanced") return 1;
+                                    if (prof === "performance") return 2;
+                                    return 1;
+                                }
+                                onActivated: writeOutput({ "action": "set_power_profile", "profile": model[currentIndex].id })
+                            }
+                        }
+
+                        Item {
+                            width: parent.width
+                            height: inhibitRow.implicitHeight
+                            Row {
+                                id: inhibitRow
+                                spacing: 5
+                                IconImage {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active ? "off" : "on"}-symbolic`)
+                                    implicitSize: 16
+                                    layer.enabled: true
+                                    layer.effect: ColorOverlay { color: Theme.accent }
+                                }
+                                Text {
+                                    text: "Idle Inhibit"
+                                    color: Theme.fg
+                                }
+                            }
+                            
+                            Rectangle {
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 40
+                                height: 20
+                                radius: 10
+                                color: root.sysStats.swayidle.active ? Theme.bg : Theme.accent
+                                border.color: Theme.border
+                                border.width: 1
+                                
+                                Rectangle {
+                                    width: 16
+                                    height: 16
+                                    radius: 8
+                                    color: Theme.fg
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    x: root.sysStats.swayidle.active ? 2 : 22
+                                    Behavior on x { NumberAnimation { duration: 100 } }
+                                }
+                            }
+                            
+                            TapHandler {
+                                onTapped: writeOutput({ "action": "toggle_swayidle" })
+                            }
+                        }
+                    }
                 }
 
                 
