@@ -2,21 +2,21 @@ import QtQuick
 
 Canvas {
     id: chart
-    // 暴露给外部的接口
-    property real value: 0        // 当前数值 (0.0 - 1.0)
+    // Interface exposed to the outside
+    property real value: 0        // Current value (0.0 - 1.0)
     property color lineColor: Theme.accent
     property int maxPoints: 40
 
-    // 内部私有记忆
+    // Internal private memory
     property var _history: []
 
-    // 核心逻辑：当外部传入的数值变化时，自动更新历史记录
+    // Core logic: when the external value changes, the history is automatically updated
     onValueChanged: {
         let data = _history;
         data.push(value);
         if (data.length > maxPoints) data.shift();
         _history = data;
-        chart.requestPaint(); // 触发重绘
+        chart.requestPaint(); // Trigger repaint
     }
 
     onPaint: {

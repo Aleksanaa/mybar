@@ -7,7 +7,7 @@ import Qt5Compat.GraphicalEffects
 PopupWindow {
     id: root
 
-    // --- 样式配置 ---
+    // --- Style Configuration ---
     property color backgroundColor: "#2d2d2d"
     property color borderColor: "#444444"
     property color textColor: "#ffffff"
@@ -18,7 +18,7 @@ PopupWindow {
     property int borderRadius: 6
     property int padding: 4
 
-    // --- 数据与状态 ---
+    // --- Data and State ---
     property var menuHandle: null
     property bool isSubMenu: false
     property var screen: Screens.primary
@@ -30,10 +30,10 @@ PopupWindow {
     color: "transparent"
     visible: false
 
-    // 锚点系统配置 (核心修改点)
-    // 对于一级菜单，我们将它的右上角对齐到触发点
-    anchor.rect.x: isSubMenu ? -width : -width // 子菜单向左偏移，一级菜单右上角对齐
-    anchor.rect.y: isSubMenu ? 0 : 4          // 一级菜单向下留出一点空隙
+    // Anchor system configuration (core modification point)
+    // For the first-level menu, we align its top-right corner to the trigger point
+    anchor.rect.x: isSubMenu ? -width : -width // Sub-menu is offset to the left, first-level menu is aligned to the top-right
+    anchor.rect.y: isSubMenu ? 0 : 4          // Leave a little space below the first-level menu
 
     onVisibleChanged: {
         // When the menu is hidden, ensure any active child submenus are also closed.
@@ -107,7 +107,7 @@ PopupWindow {
                     anchors.rightMargin: 8
                     spacing: 8
 
-                    // 1. 子菜单指示箭头 (现在放在左边，因为菜单往左展开)
+                    // 1. Sub-menu indicator arrow (now on the left, because the menu expands to the left)
                     Text {
                         text: "◀"
                         color: root.textColor
@@ -116,7 +116,7 @@ PopupWindow {
                         Layout.preferredWidth: 10
                     }
 
-                    // 2. 菜单图标
+                    // 2. Menu icon
                     Image {
                         source: modelData.icon || ""
                         Layout.preferredWidth: root.iconSize
@@ -126,7 +126,7 @@ PopupWindow {
                         asynchronous: true
                     }
 
-                    // 3. 菜单文字
+                    // 3. Menu text
                     Text {
                         Layout.fillWidth: true
                         text: modelData.text ? modelData.text.replace(/&/g, "") : ""
@@ -135,7 +135,7 @@ PopupWindow {
                         elide: Text.ElideRight
                     }
 
-                    // 4. 勾选状态 (放在右边)
+                    // 4. Check status (on the right)
                     Text {
                         text: (modelData.checkState === Qt.Checked || modelData.checked) ? "✓" : ""
                         color: root.textColor

@@ -45,7 +45,7 @@ ShellRoot {
 
     function recursiveUpdate(target, source) {
         for (let key in source) {
-            // 关键修复：如果 target 缺失这个键，先创建一个空对象防止递归崩溃
+            // if target is missing this key, create an empty object first to prevent recursive crashes
             if (typeof source[key] === 'object' && source[key] !== null) {
                 if (target[key] === undefined || typeof target[key] !== 'object') {
                     target[key] = {}; 
@@ -55,7 +55,7 @@ ShellRoot {
                 target[key] = source[key];
             }
         }
-        // 强制触发 UI 更新信号
+        // Force trigger UI update signal
         root.sysStatsChanged(); 
     }
 
@@ -664,10 +664,10 @@ ShellRoot {
                                     globalTrayMenu.showAt(parent, panel.screen);
                                 }
 
-                                // 处理交互
+                                // Handle interaction
                                 onClicked: (mouse) => {
                                     if (mouse.button === Qt.LeftButton) {
-                                        modelData.activate(); // 左键激活（通常是打开主界面）
+                                        modelData.activate(); // Left-click to activate (usually opens the main interface)
                                     } else if (mouse.button === Qt.RightButton) {
                                         showMenu(mouse)
                                     }

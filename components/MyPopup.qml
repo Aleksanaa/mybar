@@ -28,13 +28,13 @@ PopupWindow {
         radius: 8
         opacity: 0.95
 
-        // 这里是内容插槽
+        // This is the content slot
         Column {
             id: contentContainer
             anchors.fill: parent
             anchors.margins: 10
             spacing: 8
-            // 外部定义的内容会显示在这里
+            // Content defined externally will be displayed here
         }
     }
 }
