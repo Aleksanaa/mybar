@@ -19,6 +19,7 @@ def action_handler(name):
 
 import pyudev
 import dbus
+from pulsectl_asyncio import PulseAsync
 
 def _set_brightness_blocking(percent):
     """Blocking function to set brightness via D-Bus."""
@@ -54,6 +55,29 @@ async def set_brightness(data, writer):
         await asyncio.to_thread(_set_brightness_blocking, percent)
     except Exception as e:
         print(f"Error: An unexpected error occurred setting brightness: {e}", file=sys.stderr)
+
+@action_handler("set_volume")
+async def set_volume(data, writer):
+    """Sets the system volume."""
+    percent = data.get("value")
+    if percent is None:
+        print("Error: Missing 'value' field in set_volume", file=sys.stderr)
+        return
+    
+    # Ensure percent is between 0 and 1
+    percent = max(0.0, min(1.0, float(percent)))
+    
+    try:
+        async with PulseAsync('volume-setter') as pulse:
+            server_info = await pulse.server_info()
+            default_sink_name = server_info.default_sink_name
+            sinks = await pulse.sink_list()
+            for sink in sinks:
+                if sink.name == default_sink_name:
+                    await pulse.volume_set_all_chans(sink, percent)
+                    break
+    except Exception as e:
+        print(f"Error setting volume: {e}", file=sys.stderr)
 
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""

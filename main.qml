@@ -632,7 +632,10 @@ ShellRoot {
                             }
                         }
 
-                        MySlider {}
+                        MySlider {
+                            value: root.sysStats.volume.value
+                            onMoved: writeOutput({ "action": "set_volume", "value": value })
+                        }
 
                         MyCombo {}
                     }
