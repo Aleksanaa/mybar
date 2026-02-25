@@ -34,7 +34,7 @@ ShellRoot {
         "cpu": 0.01,
         "mem": 0.01,
         "temp": 0.01,
-        "bat": { "value": "XX", "approx": "050", "charging": true },
+        "bat": { "value": "XX", "approx": "050", "charging": true, "time_to_empty": 0, "time_to_full": 0, "state": 0 },
         "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
         "power_profile": "balanced",
         "brightness": { "value": 0.01, "approx": "low" },

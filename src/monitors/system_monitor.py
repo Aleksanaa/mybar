@@ -78,20 +78,4 @@ async def system_monitor(writer):
                 print(f"Error reading temperature sensor at runtime: {e}", file=sys.stderr)
                 sensor_name = None # Stop trying if it fails consistently
 
-        # --- Battery ---
-        try:
-            battery = psutil.sensors_battery()
-            if battery:
-                bat_value = str(int(battery.percent))
-                bat_approx = f"{(int(battery.percent) // 10) * 10:03d}"
-                bat_charging = battery.power_plugged
-                response["bat"] = {
-                    "value": bat_value,
-                    "approx": bat_approx,
-                    "charging": bat_charging
-                }
-        except Exception as e:
-            # If battery sensor fails, just omit the field.
-            print(f"Error reading battery sensor: {e}", file=sys.stderr)
-
         await write_json(writer, response)
