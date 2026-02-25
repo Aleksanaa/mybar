@@ -9,8 +9,8 @@ PopupWindow {
     property bool active: false
 
     visible: active
-    width: 220
-    height: 160
+    implicitWidth: 220
+    implicitHeight: 160
     color: "transparent"
 
     anchor {

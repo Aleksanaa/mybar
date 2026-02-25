@@ -96,7 +96,7 @@ PopupWindow {
                     visible: modelData.isSeparator
                     anchors.centerIn: parent
                     width: parent.width - 10
-                    height: 1
+                    implicitHeight: 1
                     color: root.borderColor
                 }
 

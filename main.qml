@@ -105,7 +105,7 @@ ShellRoot {
 
         color: "transparent"
 
-        width: 44
+        implicitWidth: 44
 
         exclusionMode: ExclusionMode.Exclusive
 
@@ -168,7 +168,7 @@ ShellRoot {
                 IconImage {
                     source: Qt.resolvedUrl("nix-snowflake-colours.svg")
                     implicitSize: 28
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
 
                     TapHandler {
                         onTapped: vicinae.running = true
@@ -204,7 +204,7 @@ ShellRoot {
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width
-                        height: parent.height * Math.min(Math.max(0.5, 0), 1)
+                        implicitHeight: parent.height * Math.min(Math.max(0.5, 0), 1)
                         color: "white"
                         radius: parent.radius
             
@@ -214,8 +214,10 @@ ShellRoot {
 
                 MyCapsule {
                     id: monitorCapsule
+                    implicitHeight: monitorColumn.implicitHeight + 8
 
                     Column {
+                        id: monitorColumn
                         anchors.centerIn: parent
                         spacing: 4
 
@@ -306,8 +308,8 @@ ShellRoot {
                         }
 
                         LineChart {
-                            width: parent.width
-                            height: 40
+                            implicitWidth: parent.width
+                            implicitHeight: 40
                             value: root.sysStats.cpu
                             lineColor: Theme.accent
                         }
@@ -317,7 +319,7 @@ ShellRoot {
 
                 MyCapsule {
                     id: netCapsule
-                    height: 40
+                    implicitHeight: 40
 
                     Column {
                         anchors.centerIn: parent
@@ -396,7 +398,7 @@ ShellRoot {
             ColumnLayout {
                 anchors.centerIn: parent
                 MyCapsule {
-                    height: 42
+                    implicitHeight: 42
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("window-close") 
@@ -411,7 +413,7 @@ ShellRoot {
                     }
                 }
                 MyCapsule {
-                    height: 42
+                    implicitHeight: 42
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("window-maximize")
@@ -426,7 +428,7 @@ ShellRoot {
                     }
                 }
                 MyCapsule {
-                    height: 42
+                    implicitHeight: 42
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("view-fullscreen")
@@ -441,7 +443,7 @@ ShellRoot {
                     }
                 }
                 MyCapsule {
-                    height: 42
+                    implicitHeight: 42
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("hand-grab-symbolic")
@@ -461,6 +463,8 @@ ShellRoot {
                 anchors.bottomMargin: 8
 
                 MyCapsule {
+                    id: notificationCapsule
+                    implicitHeight: 42
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("notifications-symbolic")
@@ -479,8 +483,10 @@ ShellRoot {
                 
                 MyCapsule {
                     id: batCapsule
+                    implicitHeight: batColumn.implicitHeight + 8
 
                     Column {
+                        id: batColumn
                         anchors.centerIn: parent
                         spacing: 4
 
@@ -531,7 +537,9 @@ ShellRoot {
                 
                 MyCapsule {
                     id: adjustCapsule
+                    implicitHeight: adjustColumn.implicitHeight + 8
                     Column {
+                        id: adjustColumn
                         anchors.centerIn: parent
                         spacing: 4
 
@@ -642,14 +650,14 @@ ShellRoot {
 
                             
                             delegate: MouseArea {
-                                width: 20
-                                height: 20
+                                implicitWidth: 20
+                                implicitHeight: 20
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 visible: modelData.status !== 0
 
                                 IconImage {
-                                    width: modelData.id.includes("Telegram") ? 16 : 20
-                                    height: 20
+                                    implicitWidth: modelData.id.includes("Telegram") ? 16 : 20
+                                    implicitHeight: 20
                                     anchors.centerIn: parent
                                     source: modelData.icon || Quickshell.iconPath("image-missing")
                                     layer.enabled: true
@@ -683,8 +691,10 @@ ShellRoot {
                 MyCapsule {
                     id: clockCapsule
                     border.width: 0
+                    implicitHeight: clockColumn.implicitHeight + 8
 
                     Column {
+                        id: clockColumn
                         anchors.centerIn: parent
                         spacing: -10
 
@@ -718,7 +728,7 @@ ShellRoot {
                         target: clockCapsule
                         id: clockDetailPopup
                         active: panel.currentPopup === clockDetailPopup
-                        height: 240
+                        implicitHeight: 240
                         Text {
                             text: Qt.formatDateTime(new Date(), "dd, MM, yyyy")
                             color: Theme.fg

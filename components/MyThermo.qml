@@ -2,8 +2,8 @@ import QtQuick
 
 Rectangle {
     id: thermoRoot
-    width: 6
-    height: 20
+    implicitWidth: 6
+    implicitHeight: 20
     color: "#585b70"
     // radius: 3
 
