@@ -86,6 +86,26 @@ async def set_volume(data, writer):
         print(f"Error setting volume: {e}", file=sys.stderr)
         pulse_setter = None
 
+@action_handler("toggle_mute")
+async def toggle_mute(data, writer):
+    """Toggles the mute state of the default audio sink."""
+    global pulse_setter
+    try:
+        if pulse_setter is None:
+            pulse_setter = PulseAsync('volume-setter')
+            await pulse_setter.connect()
+
+        server_info = await pulse_setter.server_info()
+        default_sink_name = server_info.default_sink_name
+        sinks = await pulse_setter.sink_list()
+        for sink in sinks:
+            if sink.name == default_sink_name:
+                await pulse_setter.mute(sink, not sink.mute)
+                break
+    except Exception as e:
+        print(f"Error toggling mute: {e}", file=sys.stderr)
+        pulse_setter = None
+
 @action_handler("set_sink")
 async def set_sink(data, writer):
     """Sets the default audio sink."""

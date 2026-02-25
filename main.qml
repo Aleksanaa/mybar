@@ -601,7 +601,7 @@ ShellRoot {
                                 spacing: 5
                                 IconImage {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: Quickshell.iconPath("brightness-symbolic")
+                                    source: Quickshell.iconPath(`brightness-${root.sysStats.brightness.approx}-symbolic`)
                                     implicitSize: 16
                                     layer.enabled: true
                                     layer.effect: ColorOverlay {
@@ -635,11 +635,14 @@ ShellRoot {
                                 spacing: 5
                                 IconImage {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: Quickshell.iconPath("volume-symbolic")
+                                    source: Quickshell.iconPath(`audio-volume-${root.sysStats.volume.approx}-symbolic`)
                                     implicitSize: 16
                                     layer.enabled: true
                                     layer.effect: ColorOverlay {
                                         color: Theme.accent
+                                    }
+                                    TapHandler {
+                                        onTapped: writeOutput({ "action": "toggle_mute" })
                                     }
                                 }
                                 Text {
