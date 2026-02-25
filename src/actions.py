@@ -86,6 +86,29 @@ async def set_volume(data, writer):
         print(f"Error setting volume: {e}", file=sys.stderr)
         pulse_setter = None
 
+@action_handler("set_sink")
+async def set_sink(data, writer):
+    """Sets the default audio sink."""
+    global pulse_setter
+    sink_id = data.get("sink_id")
+    if not sink_id:
+        print("Error: Missing 'sink_id' field in set_sink", file=sys.stderr)
+        return
+
+    try:
+        if pulse_setter is None:
+            pulse_setter = PulseAsync('volume-setter')
+            await pulse_setter.connect()
+
+        sinks = await pulse_setter.sink_list()
+        for sink in sinks:
+            if sink.name == sink_id:
+                await pulse_setter.default_set(sink)
+                break
+    except Exception as e:
+        print(f"Error setting sink: {e}", file=sys.stderr)
+        pulse_setter = None
+
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""
     SERVICE = "net.hadess.PowerProfiles"

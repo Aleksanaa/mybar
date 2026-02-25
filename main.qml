@@ -38,7 +38,7 @@ ShellRoot {
         "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
         "power_profile": "balanced",
         "brightness": { "value": 0.01, "approx": "low" },
-        "volume": { "value": 0.01, "approx": "low" },
+        "volume": { "value": 0.01, "approx": "low", "sinks": [], "current_sink": 0 },
         "swayidle": { "active": true }
     })
 
@@ -661,7 +661,12 @@ ShellRoot {
                             onMoved: writeOutput({ "action": "set_volume", "value": value })
                         }
 
-                        MyCombo {}
+                        MyCombo {
+                            implicitWidth: parent.width
+                            model: root.sysStats.volume.sinks
+                            currentIndex: root.sysStats.volume.current_sink
+                            onActivated: writeOutput({ "action": "set_sink", "sink_id": model[currentIndex].id })
+                        }
                     }
                 }
 
