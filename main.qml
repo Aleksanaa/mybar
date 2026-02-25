@@ -464,7 +464,7 @@ ShellRoot {
 
                 MyCapsule {
                     id: notificationCapsule
-                    implicitHeight: 42
+                    implicitHeight: 32
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("notifications-symbolic")
