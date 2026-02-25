@@ -13,25 +13,25 @@ def _format_speed(speed_bps):
     unit = "B/s"
 
     # Scale the value to appropriate units
-    if value >= 1_000_000_000:
+    if value >= 100_000_000:
         value /= 1_000_000_000
         unit = "GB/s"
-    elif value >= 1_000_000:
+    elif value >= 100_000:
         value /= 1_000_000
         unit = "MB/s"
-    elif value >= 1000:
+    elif value >= 100:
         value /= 1000
         unit = "KB/s"
 
     # Apply specific formatting rules
     if value >= 100:
-        formatted_value = f"{value:.0f}." # e.g., "123."
+        formatted_value = f"{value:.0f}"
     elif value >= 10:
-        formatted_value = f"{value:.1f}" # e.g., "12.3"
+        formatted_value = f"{value:.1f}"
     elif value >= 1:
-        formatted_value = f"{value:.2f}" # e.g., "1.23"
+        formatted_value = f"{value:.2f}"
     else: # value < 1
-        formatted_value = f"{value:.2f}" # e.g., "0.12"
+        formatted_value = f"{value:.2f}"
     
     return formatted_value, unit
 
