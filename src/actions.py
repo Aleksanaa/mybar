@@ -17,6 +17,44 @@ def action_handler(name):
         return wrapper
     return decorator
 
+import pyudev
+import dbus
+
+def _set_brightness_blocking(percent):
+    """Blocking function to set brightness via D-Bus."""
+    context = pyudev.Context()
+    devices = list(context.list_devices(subsystem='backlight'))
+    if not devices:
+        return
+    device = devices[0]
+    
+    try:
+        max_brightness = device.attributes.asint('max_brightness')
+        new_brightness = int(max_brightness * percent)
+
+        bus = dbus.SystemBus()
+        proxy = bus.get_object("org.freedesktop.login1", "/org/freedesktop/login1/session/auto")
+        session_interface = dbus.Interface(proxy, "org.freedesktop.login1.Session")
+        session_interface.SetBrightness("backlight", device.sys_name, dbus.UInt32(new_brightness))
+    except Exception as e:
+        print(f"Error setting brightness: {e}", file=sys.stderr)
+
+@action_handler("set_brightness")
+async def set_brightness(data, writer):
+    """Sets the screen brightness."""
+    percent = data.get("value")
+    if percent is None:
+        print("Error: Missing 'value' field in set_brightness", file=sys.stderr)
+        return
+    
+    # Ensure percent is between 0 and 1
+    percent = max(0.0, min(1.0, float(percent)))
+    
+    try:
+        await asyncio.to_thread(_set_brightness_blocking, percent)
+    except Exception as e:
+        print(f"Error: An unexpected error occurred setting brightness: {e}", file=sys.stderr)
+
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""
     SERVICE = "net.hadess.PowerProfiles"

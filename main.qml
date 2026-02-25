@@ -610,7 +610,10 @@ ShellRoot {
                             }
                         }
 
-                        MySlider {}
+                        MySlider {
+                            value: root.sysStats.brightness.value
+                            onMoved: writeOutput({ "action": "set_brightness", "value": value })
+                        }
 
                         Row {
                             spacing: 5
