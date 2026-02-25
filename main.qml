@@ -593,46 +593,70 @@ ShellRoot {
                         id: adjustDetailPopup
                         active: panel.currentPopup === adjustDetailPopup
 
-                        Row {
-                            spacing: 5
-                            IconImage {
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("brightness-symbolic")
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
+                        Item {
+                            width: parent.width
+                            height: brightnessLabelRow.implicitHeight
+                            Row {
+                                id: brightnessLabelRow
+                                spacing: 5
+                                IconImage {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: Quickshell.iconPath("brightness-symbolic")
+                                    implicitSize: 16
+                                    layer.enabled: true
+                                    layer.effect: ColorOverlay {
+                                        color: Theme.accent
+                                    }
+                                }
+                                Text {
+                                    text: "Brightness:"
+                                    color: Theme.fg
                                 }
                             }
                             Text {
-                                text: "Brightness:"
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: `${Math.round(root.sysStats.brightness.value * 100)}%`
                                 color: Theme.fg
                             }
                         }
 
                         MySlider {
+                            implicitWidth: parent.width
                             value: root.sysStats.brightness.value
                             onMoved: writeOutput({ "action": "set_brightness", "value": value })
                         }
 
-                        Row {
-                            spacing: 5
-                            IconImage {
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("volume-symbolic")
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
+                        Item {
+                            width: parent.width
+                            height: volumeLabelRow.implicitHeight
+                            Row {
+                                id: volumeLabelRow
+                                spacing: 5
+                                IconImage {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: Quickshell.iconPath("volume-symbolic")
+                                    implicitSize: 16
+                                    layer.enabled: true
+                                    layer.effect: ColorOverlay {
+                                        color: Theme.accent
+                                    }
+                                }
+                                Text {
+                                    text: "Volume:"
+                                    color: Theme.fg
                                 }
                             }
                             Text {
-                                text: "Volume:"
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: `${Math.round(root.sysStats.volume.value * 100)}%`
                                 color: Theme.fg
                             }
                         }
 
                         MySlider {
+                            implicitWidth: parent.width
                             value: root.sysStats.volume.value
                             onMoved: writeOutput({ "action": "set_volume", "value": value })
                         }
