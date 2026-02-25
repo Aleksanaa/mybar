@@ -38,8 +38,10 @@ ShellRoot {
         "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
         "power_profile": "balanced",
         "brightness": { "value": 0.01, "approx": "low" },
-        "volume": { "value": 0.01, "approx": "low" }
+        "volume": { "value": 0.01, "approx": "low" },
+        "swayidle": { "active": true }
     })
+
 
     function recursiveUpdate(target, source) {
         for (let key in source) {
@@ -516,8 +518,8 @@ ShellRoot {
 
                         IconImage {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            source: Quickshell.iconPath("my-caffeine-on-symbolic")
-                            implicitSize: 16
+                            source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active? "off": "on"}-symbolic`)
+                            implicitSize: 17
                             layer.enabled: true
                             layer.effect: ColorOverlay {
                                 color: Theme.accent

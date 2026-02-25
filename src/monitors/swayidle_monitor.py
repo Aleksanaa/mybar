@@ -59,22 +59,15 @@ def swayidle_dbus_worker(loop):
 
 @long_running_task
 async def swayidle_monitor(writer):
-    """Monitors swayidle.service status via D-Bus."""
-    loop = asyncio.get_running_loop()
-    
-    # Start the D-Bus worker in a separate thread
-    dbus_thread = asyncio.to_thread(swayidle_dbus_worker, loop)
-
+    """Monitors for swayidle service changes by listening to the DBUS_QUEUE."""
     while True:
         try:
             # Wait for an update from the D-Bus thread
             status = await DBUS_QUEUE.get()
-            response = {"swayidle": {"status": status}}
+            is_active = status == "active"
+            response = {"swayidle": {"active": is_active}}
             await write_json(writer, response)
             DBUS_QUEUE.task_done()
         except asyncio.CancelledError:
             # Properly handle task cancellation
             break
-
-    # The dbus_thread will exit when the main program exits.
-    # For a cleaner shutdown, a more complex signaling mechanism would be needed.
