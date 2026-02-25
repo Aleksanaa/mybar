@@ -56,9 +56,12 @@ async def set_brightness(data, writer):
     except Exception as e:
         print(f"Error: An unexpected error occurred setting brightness: {e}", file=sys.stderr)
 
+pulse_setter = None
+
 @action_handler("set_volume")
 async def set_volume(data, writer):
     """Sets the system volume."""
+    global pulse_setter
     percent = data.get("value")
     if percent is None:
         print("Error: Missing 'value' field in set_volume", file=sys.stderr)
@@ -68,16 +71,20 @@ async def set_volume(data, writer):
     percent = max(0.0, min(1.0, float(percent)))
     
     try:
-        async with PulseAsync('volume-setter') as pulse:
-            server_info = await pulse.server_info()
-            default_sink_name = server_info.default_sink_name
-            sinks = await pulse.sink_list()
-            for sink in sinks:
-                if sink.name == default_sink_name:
-                    await pulse.volume_set_all_chans(sink, percent)
-                    break
+        if pulse_setter is None:
+            pulse_setter = PulseAsync('volume-setter')
+            await pulse_setter.connect()
+
+        server_info = await pulse_setter.server_info()
+        default_sink_name = server_info.default_sink_name
+        sinks = await pulse_setter.sink_list()
+        for sink in sinks:
+            if sink.name == default_sink_name:
+                await pulse_setter.volume_set_all_chans(sink, percent)
+                break
     except Exception as e:
         print(f"Error setting volume: {e}", file=sys.stderr)
+        pulse_setter = None
 
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""
