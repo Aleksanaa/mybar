@@ -15,8 +15,10 @@ import src.monitors.system_monitor
 import src.monitors.power_profile_monitor
 import src.monitors.brightness_monitor
 import src.monitors.volume_monitor
+import src.monitors.swayidle_monitor
 
-from src.monitors.dbus_monitor import dbus_thread_worker
+from src.monitors.power_profile_monitor import power_profiles_dbus_worker
+from src.monitors.swayidle_monitor import swayidle_dbus_worker
 from src.monitors.brightness_monitor import brightness_thread_worker
 from src.monitors.volume_monitor import volume_thread_worker
 
@@ -48,9 +50,13 @@ async def main():
     """Main function to set up streams and run tasks."""
     loop = asyncio.get_running_loop()
 
-    # Start the D-Bus worker thread
-    dbus_thread = threading.Thread(target=dbus_thread_worker, args=(loop,), daemon=True)
-    dbus_thread.start()
+    # Start the power profiles D-Bus worker thread
+    power_profiles_dbus_thread = threading.Thread(target=power_profiles_dbus_worker, args=(loop,), daemon=True)
+    power_profiles_dbus_thread.start()
+
+    # Start the swayidle D-Bus worker thread
+    swayidle_dbus_thread = threading.Thread(target=swayidle_dbus_worker, args=(loop,), daemon=True)
+    swayidle_dbus_thread.start()
 
     # Start the Brightness worker thread
     brightness_thread = threading.Thread(target=brightness_thread_worker, args=(loop,), daemon=True)

@@ -18,8 +18,6 @@ import "components"
 
 ShellRoot {
     id: root
-    
-
 
     Item {
         Niri {
@@ -510,6 +508,16 @@ ShellRoot {
                             anchors.horizontalCenter: parent.horizontalCenter
                             source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
                             implicitSize: 17
+                            layer.enabled: true
+                            layer.effect: ColorOverlay {
+                                color: Theme.accent
+                            }
+                        }
+
+                        IconImage {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            source: Quickshell.iconPath("my-caffeine-on-symbolic")
+                            implicitSize: 16
                             layer.enabled: true
                             layer.effect: ColorOverlay {
                                 color: Theme.accent

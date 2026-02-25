@@ -57,3 +57,30 @@ async def handle_maximize_column(data, writer):
 async def handle_toggle_fullscreen(data, writer):
     """Toggles fullscreen mode for the currently focused window."""
     await NiriConnection().send({"Action": {"FullscreenWindow": {"id": None}}})
+
+def _toggle_swayidle_blocking():
+    """Blocking function to toggle swayidle.service, intended to be run in a thread."""
+    bus = dbus.SessionBus()
+    systemd = bus.get_object("org.freedesktop.systemd1", "/org/freedesktop/systemd1")
+    manager = dbus.Interface(systemd, "org.freedesktop.systemd1.Manager")
+
+    try:
+        unit_path = manager.GetUnit("swayidle.service")
+        unit_proxy = bus.get_object("org.freedesktop.systemd1", unit_path)
+        props_interface = dbus.Interface(unit_proxy, "org.freedesktop.DBus.Properties")
+        current_state = props_interface.Get("org.freedesktop.systemd1.Unit", "ActiveState")
+
+        if current_state == "active":
+            manager.StopUnit("swayidle.service", "replace")
+        else:
+            manager.StartUnit("swayidle.service", "replace")
+    except dbus.exceptions.DBusException as e:
+        print(f"Error toggling swayidle.service: {e}", file=sys.stderr)
+
+@action_handler("toggle_swayidle")
+async def toggle_swayidle(data, writer):
+    """Toggles the swayidle.service using D-Bus."""
+    try:
+        await asyncio.to_thread(_toggle_swayidle_blocking)
+    except Exception as e:
+        print(f"Error: An unexpected error occurred toggling swayidle: {e}", file=sys.stderr)
