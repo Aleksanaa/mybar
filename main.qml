@@ -166,12 +166,73 @@ ShellRoot {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.topMargin: 8
                 IconImage {
+                    id: nixLogo
                     source: Qt.resolvedUrl("nix-snowflake-colours.svg")
                     implicitSize: 28
                     Layout.alignment: Qt.AlignHCenter
 
                     TapHandler {
                         onTapped: vicinae.running = true
+                        onLongPressed: panel.currentPopup = appMenuPopup
+                    }
+
+                    MyPopup {
+                        target: nixLogo
+                        id: appMenuPopup
+                        active: panel.currentPopup === appMenuPopup
+                        
+                        Column {
+                            spacing: 4
+                            Repeater {
+                                model: [
+                                    { text: "Applications", icon: "view-app-grid", cmd: ["vicinae", "vicinae://extensions/vicinae/system/browse-apps"] },
+                                    { text: "Clipboard", icon: "edit-paste", cmd: ["vicinae", "vicinae://extensions/vicinae/clipboard/history"] },
+                                    { text: "Switch Windows", icon: "preferences-system-windows", cmd: ["vicinae", "vicinae://extensions/vicinae/wm/switch-windows"] },
+                                    { text: "Select Emojis", icon: "face-smile", cmd: ["vicinae", "vicinae://extensions/vicinae/core/search-emojis"] },
+                                    { text: "Terminal", icon: "utilities-terminal", cmd: ["wezterm"] },
+                                    { text: "File Manager", icon: "system-file-manager", cmd: ["nautilus", "--new-window"] }
+                                ]
+                                    Rectangle {
+                                        width: 200
+                                        height: 32
+                                        color: itemHover.hovered ? Theme.border : "transparent"
+                                        radius: 4
+                                        Process {
+                                            id: itemRunner
+                                            command: modelData.cmd
+                                        }
+                                        Row {
+                                            anchors.fill: parent
+                                            anchors.margins: 8
+                                            spacing: 8
+                                            IconImage {
+                                                source: Quickshell.iconPath(modelData.icon)
+                                                implicitSize: 16
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                layer.enabled: true
+                                                layer.effect: ColorOverlay { color: Theme.fg }
+                                            }
+                                            Text {
+                                                text: modelData.text
+                                                color: Theme.fg
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                font.pixelSize: 14
+                                            }
+                                        }
+
+                                        HoverHandler {
+                                            id: itemHover
+                                        }
+
+                                        TapHandler {
+                                            onTapped: {
+                                                itemRunner.running = true
+                                                panel.currentPopup = null
+                                            }
+                                        }
+                                    }
+                            }
+                        }
                     }
                 }
 
