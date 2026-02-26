@@ -342,40 +342,6 @@ ShellRoot {
                             }
                         }
                     }
-
-                    TapHandler {
-                        onTapped: panel.currentPopup = monitorDetailPopup
-                    }
-
-                    MyPopup {
-                        target: monitorCapsule
-                        id: monitorDetailPopup
-                        active: panel.currentPopup === monitorDetailPopup
-                        Row {
-                            spacing: 5
-                            IconImage {
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("cpu-symbolic")
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
-                                }
-                            }
-                            Text {
-                                text: "CPU:"
-                                color: Theme.fg
-                            }
-                        }
-
-                        LineChart {
-                            implicitWidth: parent.width
-                            implicitHeight: 40
-                            value: root.sysStats.cpu
-                            lineColor: Theme.accent
-                        }
-                    }
-
                 }
 
                 MyCapsule {
