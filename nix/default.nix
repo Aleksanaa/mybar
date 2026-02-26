@@ -49,5 +49,6 @@ runCommand "mybar"
           ]))
         ]
       } \
+      --chdir $out/share/mybar \
       ''${qtWrapperArgs[@]} ''${gappsWrapperArgs[@]}
   ''
