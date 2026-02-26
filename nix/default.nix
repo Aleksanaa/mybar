@@ -14,6 +14,8 @@ let
   qml-niri = callPackage ./niri.nix { };
 in
 runCommand "mybar" {
+  src = lib.cleanSource ../.;
+  
   nativeBuildInputs = [
     qt6.wrapQtAppsHook
     wrapGAppsNoGuiHook
@@ -30,7 +32,7 @@ runCommand "mybar" {
   dontWrapQtApps = true;
 } ''
   mkdir -p $out/share/mybar $out/bin
-  cp -r ${lib.cleanSource ./.}/* $out/share/mybar
+  cp -r $src/* $out/share/mybar
   makeWrapper ${lib.getExe quickshell} $out/bin/mybar \
     --add-flags "-p $out/share/mybar/main.qml" \
     --prefix PATH : ${lib.makeBinPath [
