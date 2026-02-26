@@ -185,12 +185,12 @@ ShellRoot {
                             spacing: 4
                             Repeater {
                                 model: [
-                                    { text: "Applications", icon: "view-app-grid", cmd: ["vicinae", "vicinae://extensions/vicinae/system/browse-apps"] },
-                                    { text: "Clipboard", icon: "edit-paste", cmd: ["vicinae", "vicinae://extensions/vicinae/clipboard/history"] },
-                                    { text: "Switch Windows", icon: "preferences-system-windows", cmd: ["vicinae", "vicinae://extensions/vicinae/wm/switch-windows"] },
-                                    { text: "Select Emojis", icon: "face-smile", cmd: ["vicinae", "vicinae://extensions/vicinae/core/search-emojis"] },
-                                    { text: "Terminal", icon: "utilities-terminal", cmd: ["wezterm"] },
-                                    { text: "File Manager", icon: "system-file-manager", cmd: ["nautilus", "--new-window"] }
+                                    { text: "Applications", icon: "applications-all-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/system/browse-apps"] },
+                                    { text: "Clipboard", icon: "edit-paste-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/clipboard/history"] },
+                                    { text: "Switch Windows", icon: "focus-windows-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/wm/switch-windows"] },
+                                    { text: "Select Emojis", icon: "emoji-people-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/core/search-emojis"] },
+                                    { text: "Terminal", icon: "utilities-terminal-symbolic", cmd: ["wezterm"] },
+                                    { text: "File Manager", icon: "system-file-manager-symbolic", cmd: ["nautilus", "--new-window"] }
                                 ]
                                     Rectangle {
                                         width: 200
@@ -207,10 +207,10 @@ ShellRoot {
                                             spacing: 8
                                             IconImage {
                                                 source: Quickshell.iconPath(modelData.icon)
-                                                implicitSize: 16
+                                                implicitSize: 20
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 layer.enabled: true
-                                                layer.effect: ColorOverlay { color: Theme.fg }
+                                                layer.effect: ColorOverlay { color: Theme.accent }
                                             }
                                             Text {
                                                 text: modelData.text
