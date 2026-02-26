@@ -21,6 +21,7 @@
               ps.pulsectl-asyncio
             ]))
             pkgs.gobject-introspection
+            pkgs.wtype
           ];
         };
       };

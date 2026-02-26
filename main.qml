@@ -514,6 +514,9 @@ ShellRoot {
                             color: "#94e2d5"
                         }
                     }
+                    TapHandler {
+                        onTapped: writeOutput({ "action": "toggle_super" })
+                    }
                 }
 
             }

@@ -196,3 +196,57 @@ async def toggle_swayidle(data, writer):
         await asyncio.to_thread(_toggle_swayidle_blocking)
     except Exception as e:
         print(f"Error: An unexpected error occurred toggling swayidle: {e}", file=sys.stderr)
+
+_wtype_process = None
+_niri_listener_task = None
+
+async def _niri_window_focus_listener():
+    global _wtype_process, _niri_listener_task
+    try:
+        async for event in NiriConnection().stream_events():
+            if "WindowFocusChanged" in event:
+                if _wtype_process and _wtype_process.returncode is None:
+                    _wtype_process.terminate()
+                    try:
+                        await _wtype_process.wait()
+                    except ProcessLookupError:
+                        pass
+                _wtype_process = None
+                break
+    except asyncio.CancelledError:
+        pass
+    finally:
+        _niri_listener_task = None
+
+@action_handler("toggle_super")
+async def toggle_super(data, writer):
+    """Toggles the SUPER key state using wtype and listens for Niri focus changes."""
+    global _wtype_process, _niri_listener_task
+    
+    if _wtype_process and _wtype_process.returncode is None:
+        # If running, kill it to release the key
+        _wtype_process.terminate()
+        try:
+            await _wtype_process.wait()
+        except ProcessLookupError:
+            pass
+        _wtype_process = None
+        
+        if _niri_listener_task and not _niri_listener_task.done():
+            _niri_listener_task.cancel()
+        _niri_listener_task = None
+        print("SUPER key released (wtype killed).", file=sys.stderr)
+    else:
+        # If not running, start wtype to hold the key
+        try:
+            _wtype_process = await asyncio.create_subprocess_exec(
+                "wtype", "-M", "logo", "-s", "100000", "-m", "logo"
+            )
+            print("SUPER key pressed via wtype.", file=sys.stderr)
+            
+            # Start listener to kill wtype on focus change
+            if _niri_listener_task and not _niri_listener_task.done():
+                _niri_listener_task.cancel()
+            _niri_listener_task = asyncio.create_task(_niri_window_focus_listener())
+        except Exception as e:
+            print(f"Error starting wtype: {e}", file=sys.stderr)
