@@ -28,8 +28,7 @@ class NiriConnection:
 
     async def send(self, data):
         """
-        Sends a Python object as JSON to the niri socket. This is a "fire-and-forget" operation
-        that does not wait for a reply to avoid blocking.
+        Sends a Python object as JSON to the niri socket and returns the parsed JSON response.
         """
         if not self.socket_path:
             return {"error": "NIRI_SOCKET environment variable not set"}
@@ -44,6 +43,16 @@ class NiriConnection:
                 self.writer.write(json.dumps(data).encode('utf-8') + b'\n')
                 await self.writer.drain()
 
+                # Wait for the response
+                response_line = await self.reader.readline()
+                if not response_line:
+                    return {"error": "Empty response from niri socket"}
+                
+                try:
+                    return json.loads(response_line.decode('utf-8'))
+                except json.JSONDecodeError as e:
+                    return {"error": f"Failed to parse JSON response: {e}"}
+
             except Exception as e:
                 # Invalidate connection on error
                 if self.writer:
@@ -54,6 +63,6 @@ class NiriConnection:
                         pass
                 self.writer = None
                 self.reader = None
-                print(f"Error sending to niri socket: {e}", file=sys.stderr)
+                print(f"Error communicating with niri socket: {e}", file=sys.stderr)
                 return {"error": str(e)}
         return None
