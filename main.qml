@@ -460,6 +460,7 @@ ShellRoot {
                 anchors.centerIn: parent
                 MyCapsule {
                     implicitHeight: 42
+                    border.color: th1.pressed ? "#f38ba8" : Theme.capsule
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("window-close") 
@@ -470,11 +471,13 @@ ShellRoot {
                         }
                     }
                     TapHandler {
+                        id: th1
                         onTapped: writeOutput({ "action": "close-window" })
                     }
                 }
                 MyCapsule {
                     implicitHeight: 42
+                    border.color: th2.pressed ? "#f9e2af" : Theme.capsule
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("window-maximize")
@@ -485,11 +488,13 @@ ShellRoot {
                         }
                     }
                     TapHandler {
+                        id: th2
                         onTapped: writeOutput({ "action": "maximize-column" })
                     }
                 }
                 MyCapsule {
                     implicitHeight: 42
+                    border.color: th3.pressed ? "#a6e3a1" : Theme.capsule
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("view-fullscreen")
@@ -500,11 +505,13 @@ ShellRoot {
                         }
                     }
                     TapHandler {
+                        id: th3
                         onTapped: writeOutput({ "action": "toggle-fullscreen" })
                     }
                 }
                 MyCapsule {
                     implicitHeight: 42
+                    border.color: th4.pressed ? "#94e2d5" : Theme.capsule
                     IconImage {
                         anchors.centerIn: parent
                         source: Quickshell.iconPath("hand-grab-symbolic")
@@ -515,6 +522,7 @@ ShellRoot {
                         }
                     }
                     TapHandler {
+                        id: th4
                         onTapped: writeOutput({ "action": "toggle_super" })
                     }
                 }
