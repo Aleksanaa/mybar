@@ -12,7 +12,7 @@
       devShells = {
         default = pkgs.mkShell {
           packages = [
-            (pkgs.callPackage ./default.nix { })
+            (pkgs.callPackage ./nix/quickshell.nix { })
             (pkgs.python3.withPackages (ps: [
               ps.psutil
               ps.dbus-python
@@ -24,6 +24,9 @@
             pkgs.wtype
           ];
         };
+      };
+      packages = {
+        default = pkgs.callPackage ./nix/default.nix { };
       };
     };
   };
