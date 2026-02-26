@@ -2,6 +2,8 @@ import asyncio
 import functools
 import sys
 import dbus
+import pyudev
+from pulsectl_asyncio import PulseAsync
 from .niri import NiriConnection
 
 # Registry for action handlers
@@ -20,11 +22,6 @@ def action_handler(name):
         return wrapper
 
     return decorator
-
-
-import pyudev
-import dbus
-from pulsectl_asyncio import PulseAsync
 
 
 def _set_brightness_blocking(percent):
