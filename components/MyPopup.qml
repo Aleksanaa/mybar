@@ -10,7 +10,7 @@ PopupWindow {
 
     visible: active
     implicitWidth: 220
-    implicitHeight: 160
+    implicitHeight: contentContainer.implicitHeight + 20
     color: "transparent"
 
     anchor {
@@ -31,8 +31,12 @@ PopupWindow {
         // This is the content slot
         Column {
             id: contentContainer
-            anchors.fill: parent
-            anchors.margins: 10
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: parent.top
+                margins: 10
+            }
             spacing: 8
             // Content defined externally will be displayed here
         }
