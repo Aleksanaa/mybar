@@ -66,3 +66,48 @@ class NiriConnection:
                 print(f"Error communicating with niri socket: {e}", file=sys.stderr)
                 return {"error": str(e)}
         return None
+
+    async def stream_events(self):
+        """
+        Connects to the niri socket, sends an 'EventStream' request,
+        and yields events as an async generator. This opens a separate
+        connection to avoid blocking regular send() requests.
+        """
+        if not self.socket_path:
+            print("NIRI_SOCKET environment variable not set, cannot start event stream.", file=sys.stderr)
+            return
+
+        while True:
+            reader = None
+            writer = None
+            try:
+                reader, writer = await asyncio.open_unix_connection(self.socket_path)
+                
+                # Send EventStream request
+                writer.write(json.dumps("EventStream").encode('utf-8') + b'\n')
+                await writer.drain()
+                
+                while True:
+                    line = await reader.readline()
+                    if not line:
+                        break # Connection closed or EOF
+                    
+                    try:
+                        event = json.loads(line.decode('utf-8'))
+                        yield event
+                    except json.JSONDecodeError as e:
+                        print(f"Failed to parse niri EventStream JSON: {e}", file=sys.stderr)
+            
+            except Exception as e:
+                print(f"Error in niri EventStream connection: {e}", file=sys.stderr)
+            
+            finally:
+                if writer:
+                    try:
+                        writer.close()
+                        await writer.wait_closed()
+                    except Exception:
+                        pass
+                        
+            # Wait a bit before trying to reconnect if the connection dropped
+            await asyncio.sleep(1)
