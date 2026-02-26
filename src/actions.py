@@ -7,38 +7,49 @@ from .niri import NiriConnection
 # Registry for action handlers
 ACTION_HANDLERS = {}
 
+
 def action_handler(name):
     """Decorator to register a function as an action handler."""
+
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             return await func(*args, **kwargs)
+
         ACTION_HANDLERS[name] = wrapper
         return wrapper
+
     return decorator
+
 
 import pyudev
 import dbus
 from pulsectl_asyncio import PulseAsync
 
+
 def _set_brightness_blocking(percent):
     """Blocking function to set brightness via D-Bus."""
     context = pyudev.Context()
-    devices = list(context.list_devices(subsystem='backlight'))
+    devices = list(context.list_devices(subsystem="backlight"))
     if not devices:
         return
     device = devices[0]
-    
+
     try:
-        max_brightness = device.attributes.asint('max_brightness')
+        max_brightness = device.attributes.asint("max_brightness")
         new_brightness = int(max_brightness * percent)
 
         bus = dbus.SystemBus()
-        proxy = bus.get_object("org.freedesktop.login1", "/org/freedesktop/login1/session/auto")
+        proxy = bus.get_object(
+            "org.freedesktop.login1", "/org/freedesktop/login1/session/auto"
+        )
         session_interface = dbus.Interface(proxy, "org.freedesktop.login1.Session")
-        session_interface.SetBrightness("backlight", device.sys_name, dbus.UInt32(new_brightness))
+        session_interface.SetBrightness(
+            "backlight", device.sys_name, dbus.UInt32(new_brightness)
+        )
     except Exception as e:
         print(f"Error setting brightness: {e}", file=sys.stderr)
+
 
 @action_handler("set_brightness")
 async def set_brightness(data, writer):
@@ -47,16 +58,21 @@ async def set_brightness(data, writer):
     if percent is None:
         print("Error: Missing 'value' field in set_brightness", file=sys.stderr)
         return
-    
+
     # Ensure percent is between 0 and 1
     percent = max(0.0, min(1.0, float(percent)))
-    
+
     try:
         await asyncio.to_thread(_set_brightness_blocking, percent)
     except Exception as e:
-        print(f"Error: An unexpected error occurred setting brightness: {e}", file=sys.stderr)
+        print(
+            f"Error: An unexpected error occurred setting brightness: {e}",
+            file=sys.stderr,
+        )
+
 
 pulse_setter = None
+
 
 @action_handler("set_volume")
 async def set_volume(data, writer):
@@ -66,13 +82,13 @@ async def set_volume(data, writer):
     if percent is None:
         print("Error: Missing 'value' field in set_volume", file=sys.stderr)
         return
-    
+
     # Ensure percent is between 0 and 1
     percent = max(0.0, min(1.0, float(percent)))
-    
+
     try:
         if pulse_setter is None:
-            pulse_setter = PulseAsync('volume-setter')
+            pulse_setter = PulseAsync("volume-setter")
             await pulse_setter.connect()
 
         server_info = await pulse_setter.server_info()
@@ -86,13 +102,14 @@ async def set_volume(data, writer):
         print(f"Error setting volume: {e}", file=sys.stderr)
         pulse_setter = None
 
+
 @action_handler("toggle_mute")
 async def toggle_mute(data, writer):
     """Toggles the mute state of the default audio sink."""
     global pulse_setter
     try:
         if pulse_setter is None:
-            pulse_setter = PulseAsync('volume-setter')
+            pulse_setter = PulseAsync("volume-setter")
             await pulse_setter.connect()
 
         server_info = await pulse_setter.server_info()
@@ -106,6 +123,7 @@ async def toggle_mute(data, writer):
         print(f"Error toggling mute: {e}", file=sys.stderr)
         pulse_setter = None
 
+
 @action_handler("set_sink")
 async def set_sink(data, writer):
     """Sets the default audio sink."""
@@ -117,7 +135,7 @@ async def set_sink(data, writer):
 
     try:
         if pulse_setter is None:
-            pulse_setter = PulseAsync('volume-setter')
+            pulse_setter = PulseAsync("volume-setter")
             await pulse_setter.connect()
 
         sinks = await pulse_setter.sink_list()
@@ -129,16 +147,18 @@ async def set_sink(data, writer):
         print(f"Error setting sink: {e}", file=sys.stderr)
         pulse_setter = None
 
+
 def _set_power_profile_blocking(profile_to_set):
     """Blocking function to set power profile, intended to be run in a thread."""
     SERVICE = "net.hadess.PowerProfiles"
     INTERFACE = "org.freedesktop.DBus.Properties"
     OBJECT_PATH = "/net/hadess/PowerProfiles"
-    
+
     bus = dbus.SystemBus()
     proxy = bus.get_object(SERVICE, OBJECT_PATH)
     props_interface = dbus.Interface(proxy, INTERFACE)
     props_interface.Set("net.hadess.PowerProfiles", "ActiveProfile", profile_to_set)
+
 
 @action_handler("set_power_profile")
 async def set_power_profile(data, writer):
@@ -153,22 +173,29 @@ async def set_power_profile(data, writer):
     except dbus.exceptions.DBusException as e:
         print(f"Error: Failed to set power profile: {e}", file=sys.stderr)
     except Exception as e:
-        print(f"Error: An unexpected error occurred setting power profile: {e}", file=sys.stderr)
+        print(
+            f"Error: An unexpected error occurred setting power profile: {e}",
+            file=sys.stderr,
+        )
+
 
 @action_handler("close-window")
 async def handle_close_window(data, writer):
     """Closes the currently focused window."""
     await NiriConnection().send({"Action": {"CloseWindow": {"id": None}}})
 
+
 @action_handler("maximize-column")
 async def handle_maximize_column(data, writer):
     """Maximizes the currently focused column."""
     await NiriConnection().send({"Action": {"MaximizeColumn": {}}})
 
+
 @action_handler("toggle-fullscreen")
 async def handle_toggle_fullscreen(data, writer):
     """Toggles fullscreen mode for the currently focused window."""
     await NiriConnection().send({"Action": {"FullscreenWindow": {"id": None}}})
+
 
 def _toggle_swayidle_blocking():
     """Blocking function to toggle swayidle.service, intended to be run in a thread."""
@@ -180,7 +207,9 @@ def _toggle_swayidle_blocking():
         unit_path = manager.GetUnit("swayidle.service")
         unit_proxy = bus.get_object("org.freedesktop.systemd1", unit_path)
         props_interface = dbus.Interface(unit_proxy, "org.freedesktop.DBus.Properties")
-        current_state = props_interface.Get("org.freedesktop.systemd1.Unit", "ActiveState")
+        current_state = props_interface.Get(
+            "org.freedesktop.systemd1.Unit", "ActiveState"
+        )
 
         if current_state == "active":
             manager.StopUnit("swayidle.service", "replace")
@@ -189,16 +218,22 @@ def _toggle_swayidle_blocking():
     except dbus.exceptions.DBusException as e:
         print(f"Error toggling swayidle.service: {e}", file=sys.stderr)
 
+
 @action_handler("toggle_swayidle")
 async def toggle_swayidle(data, writer):
     """Toggles the swayidle.service using D-Bus."""
     try:
         await asyncio.to_thread(_toggle_swayidle_blocking)
     except Exception as e:
-        print(f"Error: An unexpected error occurred toggling swayidle: {e}", file=sys.stderr)
+        print(
+            f"Error: An unexpected error occurred toggling swayidle: {e}",
+            file=sys.stderr,
+        )
+
 
 _wtype_process = None
 _niri_listener_task = None
+
 
 async def _niri_window_focus_listener():
     global _wtype_process, _niri_listener_task
@@ -218,11 +253,12 @@ async def _niri_window_focus_listener():
     finally:
         _niri_listener_task = None
 
+
 @action_handler("toggle_super")
 async def toggle_super(data, writer):
     """Toggles the SUPER key state using wtype and listens for Niri focus changes."""
     global _wtype_process, _niri_listener_task
-    
+
     if _wtype_process and _wtype_process.returncode is None:
         # If running, kill it to release the key
         _wtype_process.terminate()
@@ -231,7 +267,7 @@ async def toggle_super(data, writer):
         except ProcessLookupError:
             pass
         _wtype_process = None
-        
+
         if _niri_listener_task and not _niri_listener_task.done():
             _niri_listener_task.cancel()
         _niri_listener_task = None
@@ -243,7 +279,7 @@ async def toggle_super(data, writer):
                 "wtype", "-M", "logo", "-s", "100000", "-m", "logo"
             )
             print("SUPER key pressed via wtype.", file=sys.stderr)
-            
+
             # Start listener to kill wtype on focus change
             if _niri_listener_task and not _niri_listener_task.done():
                 _niri_listener_task.cancel()

@@ -8,13 +8,14 @@ from ..tasks import long_running_task
 
 UPOWER_QUEUE = asyncio.Queue()
 
+
 def upower_dbus_worker(loop):
     """Worker function to run the GLib main loop for UPower D-Bus signals."""
     SERVICE = "org.freedesktop.UPower"
     INTERFACE = "org.freedesktop.DBus.Properties"
     DEVICE_INTERFACE = "org.freedesktop.UPower.Device"
     OBJECT_PATH = "/org/freedesktop/UPower/devices/DisplayDevice"
-    
+
     def get_battery_state(props_interface):
         try:
             percentage = float(props_interface.Get(DEVICE_INTERFACE, "Percentage"))
@@ -23,7 +24,7 @@ def upower_dbus_worker(loop):
             time_to_full = int(props_interface.Get(DEVICE_INTERFACE, "TimeToFull"))
 
             charging = state == 1  # 1 is charging, 2 is discharging, 4 is fully charged
-            
+
             # Format battery string appropriately
             bat_value = str(int(percentage))
             bat_approx = f"{(int(percentage) // 10) * 10:03d}"
@@ -36,13 +37,15 @@ def upower_dbus_worker(loop):
                 "charging": charging,
                 "time_to_empty": time_to_empty,
                 "time_to_full": time_to_full,
-                "state": state
+                "state": state,
             }
         except Exception as e:
             print(f"Error reading battery properties: {e}", file=sys.stderr)
             return None
 
-    def properties_changed_handler(interface, changed_properties, invalidated_properties):
+    def properties_changed_handler(
+        interface, changed_properties, invalidated_properties
+    ):
         """Signal handler for UPower property changes."""
         # Only process if battery properties changed
         relevant_props = {"Percentage", "State", "TimeToEmpty", "TimeToFull"}
@@ -55,12 +58,12 @@ def upower_dbus_worker(loop):
                 if state_dict:
                     loop.call_soon_threadsafe(UPOWER_QUEUE.put_nowait, state_dict)
             except Exception as e:
-                 print(f"Error handling UPower change: {e}", file=sys.stderr)
+                print(f"Error handling UPower change: {e}", file=sys.stderr)
 
     try:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus = dbus.SystemBus()
-        
+
         # Get initial value
         proxy = bus.get_object(SERVICE, OBJECT_PATH)
         props_interface = dbus.Interface(proxy, INTERFACE)
@@ -76,7 +79,7 @@ def upower_dbus_worker(loop):
             path=OBJECT_PATH,
             bus_name=SERVICE,
         )
-        
+
         # Start the GLib event loop
         GLib.MainLoop().run()
     except dbus.exceptions.DBusException as e:

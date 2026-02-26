@@ -8,13 +8,16 @@ from ..tasks import long_running_task
 
 DBUS_QUEUE = asyncio.Queue()
 
+
 def power_profiles_dbus_worker(loop):
     """Worker function to run the GLib main loop for D-Bus signals."""
     SERVICE = "net.hadess.PowerProfiles"
     INTERFACE = "org.freedesktop.DBus.Properties"
     OBJECT_PATH = "/net/hadess/PowerProfiles"
-    
-    def properties_changed_handler(interface, changed_properties, invalidated_properties):
+
+    def properties_changed_handler(
+        interface, changed_properties, invalidated_properties
+    ):
         """Signal handler for property changes."""
         if "ActiveProfile" in changed_properties:
             new_profile = changed_properties["ActiveProfile"]
@@ -23,11 +26,13 @@ def power_profiles_dbus_worker(loop):
     try:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus = dbus.SystemBus()
-        
+
         # Get initial value
         proxy = bus.get_object(SERVICE, OBJECT_PATH)
         props_interface = dbus.Interface(proxy, INTERFACE)
-        initial_profile = props_interface.Get("net.hadess.PowerProfiles", "ActiveProfile")
+        initial_profile = props_interface.Get(
+            "net.hadess.PowerProfiles", "ActiveProfile"
+        )
         loop.call_soon_threadsafe(DBUS_QUEUE.put_nowait, initial_profile)
 
         # Subscribe to signals
@@ -38,7 +43,7 @@ def power_profiles_dbus_worker(loop):
             path=OBJECT_PATH,
             bus_name=SERVICE,
         )
-        
+
         # Start the GLib event loop
         GLib.MainLoop().run()
     except dbus.exceptions.DBusException as e:

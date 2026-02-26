@@ -10,7 +10,7 @@ Slider {
         implicitWidth: 14
         implicitHeight: 14
         radius: 7
-        color: Theme.fg 
+        color: Theme.fg
     }
 
     background: Rectangle {

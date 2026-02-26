@@ -12,7 +12,7 @@ PopupWindow {
     property color borderColor: "#444444"
     property color textColor: "#ffffff"
     property color highlightColor: "#3d3d3d"
-    property int menuWidth: 220 
+    property int menuWidth: 220
     property int itemHeight: 32
     property int iconSize: 18
     property int borderRadius: 6
@@ -26,7 +26,7 @@ PopupWindow {
 
     implicitWidth: menuWidth
     implicitHeight: columnLayout.implicitHeight + (padding * 2)
-    
+
     color: "transparent"
     visible: false
 
@@ -64,7 +64,7 @@ PopupWindow {
     MouseArea {
         anchors.fill: parent
         // This MouseArea should be on top of other items when a submenu is active
-        z: 1 
+        z: 1
         enabled: root.activeSubMenu !== null // Only active when a submenu is open
         onClicked: {
             // If there's an active submenu, close it
@@ -82,11 +82,11 @@ PopupWindow {
 
         Repeater {
             model: opener.children ? [...opener.children.values] : []
-            
+
             delegate: Rectangle {
                 id: itemDelegate
                 required property var modelData
-                
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: modelData.isSeparator ? 8 : root.itemHeight
                 color: mouseArea.containsMouse ? root.highlightColor : "transparent"
@@ -149,7 +149,7 @@ PopupWindow {
                     anchors.fill: parent
                     hoverEnabled: true
                     enabled: modelData.enabled && !modelData.isSeparator
-                    
+
                     onClicked: {
                         if (modelData.hasChildren) {
                             var component = Qt.createComponent(Qt.resolvedUrl("TrayMenu.qml"));
@@ -166,16 +166,16 @@ PopupWindow {
                                     "anchor.item": itemDelegate
                                 });
                                 parentMenu.activeSubMenu = sub; // Keep track of the active submenu
-                                sub.onVisibleChanged.connect(function() {
+                                sub.onVisibleChanged.connect(function () {
                                     if (!sub.visible) {
                                         parentMenu.activeSubMenu = null; // Clear when submenu closes
                                     }
                                 });
-                                sub.visible = true; 
+                                sub.visible = true;
                             }
                         } else {
                             modelData.triggered();
-                            root.closeAll(); 
+                            root.closeAll();
                         }
                     }
                 }
@@ -191,9 +191,11 @@ PopupWindow {
     }
 
     function showAt(anchorItem, screenObj) {
-        if (!anchorItem) return;
+        if (!anchorItem)
+            return;
         root.anchor.item = anchorItem;
-        if (screenObj) root.screen = screenObj;
+        if (screenObj)
+            root.screen = screenObj;
         root.visible = true;
     }
 }

@@ -14,7 +14,8 @@ Canvas {
     onValueChanged: {
         let data = _history;
         data.push(value);
-        if (data.length > maxPoints) data.shift();
+        if (data.length > maxPoints)
+            data.shift();
         _history = data;
         chart.requestPaint(); // Trigger repaint
     }
@@ -22,18 +23,21 @@ Canvas {
     onPaint: {
         var ctx = getContext("2d");
         ctx.reset();
-        if (_history.length < 2) return;
+        if (_history.length < 2)
+            return;
 
         let stepX = width / (maxPoints - 1);
-    
+
         ctx.beginPath();
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 2;
         for (let i = 0; i < _history.length; i++) {
             let x = i * stepX;
             let y = height - (_history[i] * height);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            if (i === 0)
+                ctx.moveTo(x, y);
+            else
+                ctx.lineTo(x, y);
         }
         ctx.stroke();
 

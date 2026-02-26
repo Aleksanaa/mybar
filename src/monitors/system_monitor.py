@@ -4,12 +4,13 @@ import psutil
 from ..utils import write_json
 from ..tasks import long_running_task
 
+
 @long_running_task
 async def system_monitor(writer):
     """Monitors and reports CPU, memory, CPU temperature, and battery usage once per second."""
     # --- Temperature Sensor Initialization ---
     sensor_name, sensor_index, temp_min = None, None, 30.0
-    temp_max = None # Will be set during discovery
+    temp_max = None  # Will be set during discovery
 
     try:
         temps = psutil.sensors_temperatures()
@@ -24,17 +25,19 @@ async def system_monitor(writer):
                             if entry.high is not None and entry.high > temp_min:
                                 temp_max = entry.high
                             else:
-                                temp_max = 110.0 # Default max temp if 'high' is not available or too low
+                                temp_max = 110.0  # Default max temp if 'high' is not available or too low
                             sensor_name, sensor_index = name, i
-                            break # Found a suitable entry for this sensor name
-                if sensor_name: # Found a suitable sensor name and entry
+                            break  # Found a suitable entry for this sensor name
+                if sensor_name:  # Found a suitable sensor name and entry
                     break
     except Exception as e:
         print(f"Error initializing temperature sensor: {e}", file=sys.stderr)
         # If an error occurs during initialization, treat as if no sensor was found
         sensor_name = None
 
-    if sensor_name is None: # Only print warning if NO sensor (even with default high) was found
+    if (
+        sensor_name is None
+    ):  # Only print warning if NO sensor (even with default high) was found
         print(
             "Warning: No CPU temperature sensor found. Temp monitoring will be disabled.",
             file=sys.stderr,
@@ -49,7 +52,7 @@ async def system_monitor(writer):
         # --- CPU and Memory ---
         cpu_percent = psutil.cpu_percent(interval=None) / 100.0
         mem_percent = psutil.virtual_memory().percent / 100.0
-        
+
         response = {
             "cpu": round(cpu_percent, 2),
             "mem": round(mem_percent, 2),
@@ -65,7 +68,9 @@ async def system_monitor(writer):
                         # Normalize the temperature
                         # Avoid division by zero if temp_max somehow ended up <= temp_min
                         if (temp_max - temp_min) > 0:
-                            normalized_temp = (current_temp - temp_min) / (temp_max - temp_min)
+                            normalized_temp = (current_temp - temp_min) / (
+                                temp_max - temp_min
+                            )
                             # Clamp the value between 0.0 and 1.0
                             clamped_temp = max(0.0, min(1.0, normalized_temp))
                             response["temp"] = round(clamped_temp, 2)
@@ -75,7 +80,9 @@ async def system_monitor(writer):
                             response["temp"] = 0.0 if current_temp <= temp_min else 1.0
             except Exception as e:
                 # Handle cases where sensor might become unavailable or error out mid-run
-                print(f"Error reading temperature sensor at runtime: {e}", file=sys.stderr)
-                sensor_name = None # Stop trying if it fails consistently
+                print(
+                    f"Error reading temperature sensor at runtime: {e}", file=sys.stderr
+                )
+                sensor_name = None  # Stop trying if it fails consistently
 
         await write_json(writer, response)

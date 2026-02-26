@@ -4,6 +4,7 @@ import psutil
 from ..utils import write_json
 from ..tasks import long_running_task
 
+
 def _format_speed(speed_bps):
     """Formats speed in bytes per second to a human-readable string with specific length constraints."""
     if speed_bps == 0:
@@ -30,9 +31,9 @@ def _format_speed(speed_bps):
         formatted_value = f"{value:.1f}"
     elif value >= 1:
         formatted_value = f"{value:.2f}"
-    else: # value < 1
+    else:  # value < 1
         formatted_value = f"{value:.2f}"
-    
+
     return formatted_value, unit
 
 

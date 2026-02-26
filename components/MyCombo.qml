@@ -5,7 +5,7 @@ ComboBox {
     id: myCombo
     width: 200
 
-    textRole: "name" 
+    textRole: "name"
 
     background: Rectangle {
         implicitWidth: 200

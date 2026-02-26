@@ -15,7 +15,10 @@ Rectangle {
         anchors.bottom: parent.bottom
         color: Theme.accent
         Behavior on height {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                duration: 300
+                easing.type: Easing.OutCubic
+            }
         }
     }
 }

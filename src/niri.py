@@ -20,7 +20,9 @@ class NiriConnection:
         if not self.socket_path:
             return False
         try:
-            self.reader, self.writer = await asyncio.open_unix_connection(self.socket_path)
+            self.reader, self.writer = await asyncio.open_unix_connection(
+                self.socket_path
+            )
             return True
         except Exception as e:
             print(f"Error connecting to niri socket: {e}", file=sys.stderr)
@@ -40,16 +42,16 @@ class NiriConnection:
 
             try:
                 # Send request and append a newline
-                self.writer.write(json.dumps(data).encode('utf-8') + b'\n')
+                self.writer.write(json.dumps(data).encode("utf-8") + b"\n")
                 await self.writer.drain()
 
                 # Wait for the response
                 response_line = await self.reader.readline()
                 if not response_line:
                     return {"error": "Empty response from niri socket"}
-                
+
                 try:
-                    return json.loads(response_line.decode('utf-8'))
+                    return json.loads(response_line.decode("utf-8"))
                 except json.JSONDecodeError as e:
                     return {"error": f"Failed to parse JSON response: {e}"}
 
@@ -74,7 +76,10 @@ class NiriConnection:
         connection to avoid blocking regular send() requests.
         """
         if not self.socket_path:
-            print("NIRI_SOCKET environment variable not set, cannot start event stream.", file=sys.stderr)
+            print(
+                "NIRI_SOCKET environment variable not set, cannot start event stream.",
+                file=sys.stderr,
+            )
             return
 
         while True:
@@ -82,25 +87,28 @@ class NiriConnection:
             writer = None
             try:
                 reader, writer = await asyncio.open_unix_connection(self.socket_path)
-                
+
                 # Send EventStream request
-                writer.write(json.dumps("EventStream").encode('utf-8') + b'\n')
+                writer.write(json.dumps("EventStream").encode("utf-8") + b"\n")
                 await writer.drain()
-                
+
                 while True:
                     line = await reader.readline()
                     if not line:
-                        break # Connection closed or EOF
-                    
+                        break  # Connection closed or EOF
+
                     try:
-                        event = json.loads(line.decode('utf-8'))
+                        event = json.loads(line.decode("utf-8"))
                         yield event
                     except json.JSONDecodeError as e:
-                        print(f"Failed to parse niri EventStream JSON: {e}", file=sys.stderr)
-            
+                        print(
+                            f"Failed to parse niri EventStream JSON: {e}",
+                            file=sys.stderr,
+                        )
+
             except Exception as e:
                 print(f"Error in niri EventStream connection: {e}", file=sys.stderr)
-            
+
             finally:
                 if writer:
                     try:
@@ -108,6 +116,6 @@ class NiriConnection:
                         await writer.wait_closed()
                     except Exception:
                         pass
-                        
+
             # Wait a bit before trying to reconnect if the connection dropped
             await asyncio.sleep(1)

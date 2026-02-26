@@ -15,7 +15,6 @@ import Qt5Compat.GraphicalEffects
 import Niri 0.1
 import "components"
 
-
 ShellRoot {
     id: root
 
@@ -24,31 +23,52 @@ ShellRoot {
             id: niri
             Component.onCompleted: connect()
             onConnected: console.log("Connected to niri")
-            onErrorOccurred: function(error) {
-                console.error("Error:", error)
+            onErrorOccurred: function (error) {
+                console.error("Error:", error);
             }
         }
     }
 
     property var sysStats: ({
-        "cpu": 0.01,
-        "mem": 0.01,
-        "temp": 0.01,
-        "bat": { "value": "XX", "approx": "050", "charging": true, "time_to_empty": 0, "time_to_full": 0, "state": 0 },
-        "net": { "up": "X.XX", "up_unit": "B/s", "down": "X.XX", "down_unit": "B/s" },
-        "power_profile": "balanced",
-        "brightness": { "value": 0.01, "approx": "low" },
-        "volume": { "value": 0.01, "approx": "low", "sinks": [], "current_sink": 0 },
-        "swayidle": { "active": true }
-    })
-
+            "cpu": 0.01,
+            "mem": 0.01,
+            "temp": 0.01,
+            "bat": {
+                "value": "XX",
+                "approx": "050",
+                "charging": true,
+                "time_to_empty": 0,
+                "time_to_full": 0,
+                "state": 0
+            },
+            "net": {
+                "up": "X.XX",
+                "up_unit": "B/s",
+                "down": "X.XX",
+                "down_unit": "B/s"
+            },
+            "power_profile": "balanced",
+            "brightness": {
+                "value": 0.01,
+                "approx": "low"
+            },
+            "volume": {
+                "value": 0.01,
+                "approx": "low",
+                "sinks": [],
+                "current_sink": 0
+            },
+            "swayidle": {
+                "active": true
+            }
+        })
 
     function recursiveUpdate(target, source) {
         for (let key in source) {
             // if target is missing this key, create an empty object first to prevent recursive crashes
             if (typeof source[key] === 'object' && source[key] !== null) {
                 if (target[key] === undefined || typeof target[key] !== 'object') {
-                    target[key] = {}; 
+                    target[key] = {};
                 }
                 root.recursiveUpdate(target[key], source[key]);
             } else {
@@ -56,7 +76,7 @@ ShellRoot {
             }
         }
         // Force trigger UI update signal
-        root.sysStatsChanged(); 
+        root.sysStatsChanged();
     }
 
     Process {
@@ -64,15 +84,15 @@ ShellRoot {
         command: ["python3", "main.py"]
         running: true
         stdout: SplitParser {
-            onRead: (data) => {
-                if (!data) return;
+            onRead: data => {
+                if (!data)
+                    return;
 
                 try {
                     let cleanData = data.trim();
                     let jsonObject = JSON.parse(cleanData);
 
                     root.recursiveUpdate(root.sysStats, jsonObject);
-
                 } catch (e) {
                     console.log("JSON: ", e, "content: ", data);
                 }
@@ -96,7 +116,7 @@ ShellRoot {
 
     PanelWindow {
         id: panel
-        
+
         anchors {
             right: true
             top: true
@@ -115,11 +135,11 @@ ShellRoot {
         MouseArea {
             anchors.fill: parent
             enabled: panel.currentPopup !== null
-            z: 998 
+            z: 998
             onPressed: {
                 if (panel.currentPopup) {
                     if (typeof panel.currentPopup.closeAll === "function") {
-                        panel.currentPopup.closeAll()
+                        panel.currentPopup.closeAll();
                     }
                     panel.currentPopup = null;
                 }
@@ -145,7 +165,6 @@ ShellRoot {
             visible: panel.currentPopup === globalTrayMenu
         }
 
-        
         Rectangle {
             id: contentRect
             anchors {
@@ -177,60 +196,86 @@ ShellRoot {
                     }
 
                     MyPopup {
-                        target: nixLogo
                         id: appMenuPopup
+                        target: nixLogo
                         active: panel.currentPopup === appMenuPopup
-                        
+
                         Column {
                             spacing: 4
                             Repeater {
                                 model: [
-                                    { text: "Applications", icon: "applications-all-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/system/browse-apps"] },
-                                    { text: "Clipboard", icon: "edit-paste-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/clipboard/history"] },
-                                    { text: "Switch Windows", icon: "focus-windows-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/wm/switch-windows"] },
-                                    { text: "Select Emojis", icon: "emoji-people-symbolic", cmd: ["vicinae", "vicinae://extensions/vicinae/core/search-emojis"] },
-                                    { text: "Terminal", icon: "utilities-terminal-symbolic", cmd: ["wezterm"] },
-                                    { text: "File Manager", icon: "system-file-manager-symbolic", cmd: ["nautilus", "--new-window"] }
+                                    {
+                                        text: "Applications",
+                                        icon: "applications-all-symbolic",
+                                        cmd: ["vicinae", "vicinae://extensions/vicinae/system/browse-apps"]
+                                    },
+                                    {
+                                        text: "Clipboard",
+                                        icon: "edit-paste-symbolic",
+                                        cmd: ["vicinae", "vicinae://extensions/vicinae/clipboard/history"]
+                                    },
+                                    {
+                                        text: "Switch Windows",
+                                        icon: "focus-windows-symbolic",
+                                        cmd: ["vicinae", "vicinae://extensions/vicinae/wm/switch-windows"]
+                                    },
+                                    {
+                                        text: "Select Emojis",
+                                        icon: "emoji-people-symbolic",
+                                        cmd: ["vicinae", "vicinae://extensions/vicinae/core/search-emojis"]
+                                    },
+                                    {
+                                        text: "Terminal",
+                                        icon: "utilities-terminal-symbolic",
+                                        cmd: ["wezterm"]
+                                    },
+                                    {
+                                        text: "File Manager",
+                                        icon: "system-file-manager-symbolic",
+                                        cmd: ["nautilus", "--new-window"]
+                                    }
                                 ]
-                                    Rectangle {
-                                        width: 200
-                                        height: 32
-                                        color: itemHover.hovered ? Theme.border : "transparent"
-                                        radius: 4
-                                        Process {
-                                            id: itemRunner
-                                            command: modelData.cmd
-                                        }
-                                        Row {
-                                            anchors.fill: parent
-                                            anchors.margins: 8
-                                            spacing: 8
-                                            IconImage {
-                                                source: Quickshell.iconPath(modelData.icon)
-                                                implicitSize: 20
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                layer.enabled: true
-                                                layer.effect: ColorOverlay { color: Theme.accent }
-                                            }
-                                            Text {
-                                                text: modelData.text
-                                                color: Theme.fg
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                font.pixelSize: 14
+                                Rectangle {
+                                    width: 200
+                                    height: 32
+                                    color: itemHover.hovered ? Theme.border : "transparent"
+                                    radius: 4
+                                    Process {
+                                        id: itemRunner
+                                        command: modelData.cmd
+                                    }
+                                    Row {
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 8
+                                        IconImage {
+                                            source: Quickshell.iconPath(modelData.icon)
+                                            implicitSize: 20
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: Theme.accent
                                             }
                                         }
-
-                                        HoverHandler {
-                                            id: itemHover
-                                        }
-
-                                        TapHandler {
-                                            onTapped: {
-                                                itemRunner.running = true
-                                                panel.currentPopup = null
-                                            }
+                                        Text {
+                                            text: modelData.text
+                                            color: Theme.fg
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            font.pixelSize: 14
                                         }
                                     }
+
+                                    HoverHandler {
+                                        id: itemHover
+                                    }
+
+                                    TapHandler {
+                                        onTapped: {
+                                            itemRunner.running = true;
+                                            panel.currentPopup = null;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -240,7 +285,7 @@ ShellRoot {
                     Repeater {
                         model: niri.workspaces
                         delegate: MyCapsule {
-                            height: model.isFocused? 32 : 20
+                            height: model.isFocused ? 32 : 20
                             border.width: model.isFocused ? 2 : 0
                             Text {
                                 text: model.index
@@ -268,8 +313,12 @@ ShellRoot {
                         implicitHeight: parent.height * Math.min(Math.max(0.5, 0), 1)
                         color: "white"
                         radius: parent.radius
-            
-                        Behavior on height { NumberAnimation { duration: 500 } }
+
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: 500
+                            }
+                        }
                     }
                 }
 
@@ -367,7 +416,7 @@ ShellRoot {
 
                             Column {
                                 spacing: -4
-                                
+
                                 Text {
                                     text: root.sysStats.net.up
                                     font.pixelSize: 8
@@ -378,7 +427,7 @@ ShellRoot {
                                 Text {
                                     text: root.sysStats.net.up_unit
                                     font.pixelSize: 8
-                                    color:Theme.fg
+                                    color: Theme.fg
                                     font.bold: true
                                     font.family: Theme.globalFont
                                 }
@@ -401,7 +450,7 @@ ShellRoot {
 
                             Column {
                                 spacing: -4
-                                
+
                                 Text {
                                     text: root.sysStats.net.down
                                     font.pixelSize: 8
@@ -412,7 +461,7 @@ ShellRoot {
                                 Text {
                                     text: root.sysStats.net.down_unit
                                     font.pixelSize: 8
-                                    color:Theme.fg
+                                    color: Theme.fg
                                     font.bold: true
                                     font.family: Theme.globalFont
                                 }
@@ -429,7 +478,7 @@ ShellRoot {
                     border.color: th1.pressed ? "#f38ba8" : Theme.capsule
                     IconImage {
                         anchors.centerIn: parent
-                        source: Quickshell.iconPath("window-close") 
+                        source: Quickshell.iconPath("window-close")
                         implicitSize: 32
                         layer.enabled: true
                         layer.effect: ColorOverlay {
@@ -438,7 +487,9 @@ ShellRoot {
                     }
                     TapHandler {
                         id: th1
-                        onTapped: writeOutput({ "action": "close-window" })
+                        onTapped: writeOutput({
+                            "action": "close-window"
+                        })
                     }
                 }
                 MyCapsule {
@@ -455,7 +506,9 @@ ShellRoot {
                     }
                     TapHandler {
                         id: th2
-                        onTapped: writeOutput({ "action": "maximize-column" })
+                        onTapped: writeOutput({
+                            "action": "maximize-column"
+                        })
                     }
                 }
                 MyCapsule {
@@ -472,7 +525,9 @@ ShellRoot {
                     }
                     TapHandler {
                         id: th3
-                        onTapped: writeOutput({ "action": "toggle-fullscreen" })
+                        onTapped: writeOutput({
+                            "action": "toggle-fullscreen"
+                        })
                     }
                 }
                 MyCapsule {
@@ -489,10 +544,11 @@ ShellRoot {
                     }
                     TapHandler {
                         id: th4
-                        onTapped: writeOutput({ "action": "toggle_super" })
+                        onTapped: writeOutput({
+                            "action": "toggle_super"
+                        })
                     }
                 }
-
             }
 
             ColumnLayout {
@@ -518,7 +574,6 @@ ShellRoot {
                     }
                 }
 
-                
                 MyCapsule {
                     id: batCapsule
                     implicitHeight: batColumn.implicitHeight + 8
@@ -538,8 +593,8 @@ ShellRoot {
                                 }
                             }
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
                                 id: batPercentage
+                                anchors.verticalCenter: parent.verticalCenter
                                 text: root.sysStats.bat.value
                                 font.pixelSize: 10
                                 color: Theme.fg
@@ -562,7 +617,7 @@ ShellRoot {
 
                         IconImage {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active? "off": "on"}-symbolic`)
+                            source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active ? "off" : "on"}-symbolic`)
                             implicitSize: 17
                             layer.enabled: true
                             layer.effect: ColorOverlay {
@@ -576,8 +631,8 @@ ShellRoot {
                     }
 
                     MyPopup {
-                        target: batCapsule
                         id: batDetailPopup
+                        target: batCapsule
                         active: panel.currentPopup === batDetailPopup
 
                         Row {
@@ -645,18 +700,33 @@ ShellRoot {
                             MyCombo {
                                 Layout.fillWidth: true
                                 model: [
-                                    { name: "Power Saver", id: "power-saver" },
-                                    { name: "Balanced", id: "balanced" },
-                                    { name: "Performance", id: "performance" }
+                                    {
+                                        name: "Power Saver",
+                                        id: "power-saver"
+                                    },
+                                    {
+                                        name: "Balanced",
+                                        id: "balanced"
+                                    },
+                                    {
+                                        name: "Performance",
+                                        id: "performance"
+                                    }
                                 ]
                                 currentIndex: {
                                     let prof = root.sysStats.power_profile;
-                                    if (prof === "power-saver") return 0;
-                                    if (prof === "balanced") return 1;
-                                    if (prof === "performance") return 2;
+                                    if (prof === "power-saver")
+                                        return 0;
+                                    if (prof === "balanced")
+                                        return 1;
+                                    if (prof === "performance")
+                                        return 2;
                                     return 1;
                                 }
-                                onActivated: writeOutput({ "action": "set_power_profile", "profile": model[currentIndex].id })
+                                onActivated: writeOutput({
+                                    "action": "set_power_profile",
+                                    "profile": model[currentIndex].id
+                                })
                             }
                         }
 
@@ -671,14 +741,16 @@ ShellRoot {
                                     source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active ? "off" : "on"}-symbolic`)
                                     implicitSize: 16
                                     layer.enabled: true
-                                    layer.effect: ColorOverlay { color: Theme.accent }
+                                    layer.effect: ColorOverlay {
+                                        color: Theme.accent
+                                    }
                                 }
                                 Text {
                                     text: "Idle Inhibit"
                                     color: Theme.fg
                                 }
                             }
-                            
+
                             Rectangle {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
@@ -688,7 +760,7 @@ ShellRoot {
                                 color: root.sysStats.swayidle.active ? Theme.bg : Theme.accent
                                 border.color: Theme.border
                                 border.width: 1
-                                
+
                                 Rectangle {
                                     width: 16
                                     height: 16
@@ -696,18 +768,23 @@ ShellRoot {
                                     color: Theme.fg
                                     anchors.verticalCenter: parent.verticalCenter
                                     x: root.sysStats.swayidle.active ? 2 : 22
-                                    Behavior on x { NumberAnimation { duration: 100 } }
+                                    Behavior on x {
+                                        NumberAnimation {
+                                            duration: 100
+                                        }
+                                    }
                                 }
                             }
-                            
+
                             TapHandler {
-                                onTapped: writeOutput({ "action": "toggle_swayidle" })
+                                onTapped: writeOutput({
+                                    "action": "toggle_swayidle"
+                                })
                             }
                         }
                     }
                 }
 
-                
                 MyCapsule {
                     id: adjustCapsule
                     implicitHeight: adjustColumn.implicitHeight + 8
@@ -762,8 +839,8 @@ ShellRoot {
                     }
 
                     MyPopup {
-                        target: adjustCapsule
                         id: adjustDetailPopup
+                        target: adjustCapsule
                         active: panel.currentPopup === adjustDetailPopup
 
                         Item {
@@ -797,7 +874,10 @@ ShellRoot {
                         MySlider {
                             implicitWidth: parent.width
                             value: root.sysStats.brightness.value
-                            onMoved: writeOutput({ "action": "set_brightness", "value": value })
+                            onMoved: writeOutput({
+                                "action": "set_brightness",
+                                "value": value
+                            })
                         }
 
                         Item {
@@ -815,7 +895,9 @@ ShellRoot {
                                         color: Theme.accent
                                     }
                                     TapHandler {
-                                        onTapped: writeOutput({ "action": "toggle_mute" })
+                                        onTapped: writeOutput({
+                                            "action": "toggle_mute"
+                                        })
                                     }
                                 }
                                 Text {
@@ -834,21 +916,24 @@ ShellRoot {
                         MySlider {
                             implicitWidth: parent.width
                             value: root.sysStats.volume.value
-                            onMoved: writeOutput({ "action": "set_volume", "value": value })
+                            onMoved: writeOutput({
+                                "action": "set_volume",
+                                "value": value
+                            })
                         }
 
                         MyCombo {
                             implicitWidth: parent.width
                             model: root.sysStats.volume.sinks
                             currentIndex: root.sysStats.volume.current_sink
-                            onActivated: writeOutput({ "action": "set_sink", "sink_id": model[currentIndex].id })
+                            onActivated: writeOutput({
+                                "action": "set_sink",
+                                "sink_id": model[currentIndex].id
+                            })
                         }
                     }
                 }
 
-
-
-                
                 MyCapsule {
                     id: trayCapsule
                     implicitHeight: Math.max(trayColumn.implicitHeight + 8, 10)
@@ -859,7 +944,6 @@ ShellRoot {
                         Repeater {
                             model: SystemTray.items
 
-                            
                             delegate: MouseArea {
                                 implicitWidth: 20
                                 implicitHeight: 20
@@ -878,26 +962,25 @@ ShellRoot {
                                 }
 
                                 function showMenu(mouse) {
-                                    panel.currentPopup = globalTrayMenu
+                                    panel.currentPopup = globalTrayMenu;
                                     globalTrayMenu.menuHandle = modelData.menu;
                                     globalTrayMenu.showAt(parent, panel.screen);
                                 }
 
                                 // Handle interaction
-                                onClicked: (mouse) => {
+                                onClicked: mouse => {
                                     if (mouse.button === Qt.LeftButton) {
                                         modelData.activate(); // Left-click to activate (usually opens the main interface)
                                     } else if (mouse.button === Qt.RightButton) {
-                                        showMenu(mouse)
+                                        showMenu(mouse);
                                     }
                                 }
 
-                                onPressAndHold: (mouse) => showMenu(mouse)
+                                onPressAndHold: mouse => showMenu(mouse)
                             }
                         }
                     }
                 }
-
 
                 MyCapsule {
                     id: clockCapsule
@@ -930,14 +1013,13 @@ ShellRoot {
                         }
                     }
 
-                    
                     TapHandler {
                         onTapped: panel.currentPopup = clockDetailPopup
                     }
 
                     MyPopup {
-                        target: clockCapsule
                         id: clockDetailPopup
+                        target: clockCapsule
                         active: panel.currentPopup === clockDetailPopup
                         implicitHeight: 240
                         Text {
@@ -951,7 +1033,7 @@ ShellRoot {
                         DayOfWeekRow {
                             locale: Qt.locale("zh_CN")
                             width: parent.width
-        
+
                             delegate: Text {
                                 text: model.narrowName
                                 font.bold: true
@@ -967,7 +1049,7 @@ ShellRoot {
                             id: grid
                             width: parent.width
                             locale: Qt.locale("zh_CN")
-        
+
                             month: new Date().getMonth()
                             year: new Date().getFullYear()
 
