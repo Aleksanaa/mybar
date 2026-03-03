@@ -103,11 +103,17 @@ ShellRoot {
     Process {
         id: vicinae
         command: ["vicinae", "toggle"]
+        function closeAll() {
+            running = true;
+        }
     }
 
     Process {
         id: swaync
-        command: ["swaync-client", "-op"]
+        command: ["swaync-client", "-t"]
+        function closeAll() {
+            running = true;
+        }
     }
 
     function writeOutput(event) {
@@ -191,7 +197,10 @@ ShellRoot {
                     Layout.alignment: Qt.AlignHCenter
 
                     TapHandler {
-                        onTapped: vicinae.running = true
+                        onTapped: {
+                            vicinae.running = true;
+                            panel.currentPopup = vicinae;
+                        }
                         onLongPressed: panel.currentPopup = appMenuPopup
                     }
 
@@ -227,7 +236,7 @@ ShellRoot {
                                     {
                                         text: "Terminal",
                                         icon: "utilities-terminal-symbolic",
-                                        cmd: ["wezterm"]
+                                        cmd: ["alacritty", "msg", "create-window"]
                                     },
                                     {
                                         text: "File Manager",
@@ -570,7 +579,10 @@ ShellRoot {
                     }
 
                     TapHandler {
-                        onTapped: swaync.running = true
+                        onTapped: {
+                            swaync.running = true;
+                            panel.currentPopup = swaync;
+                        }
                     }
                 }
 
