@@ -70,8 +70,10 @@ async def net_usage_monitor(writer):
             "net": {
                 "up": up_val,
                 "up_unit": up_unit,
+                "up_raw": upload_speed,
                 "down": down_val,
                 "down_unit": down_unit,
+                "down_raw": download_speed,
             }
         }
         await write_json(writer, response)

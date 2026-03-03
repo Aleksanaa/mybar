@@ -44,8 +44,10 @@ ShellRoot {
             "net": {
                 "up": "X.XX",
                 "up_unit": "B/s",
+                "up_raw": 0.0,
                 "down": "X.XX",
-                "down_unit": "B/s"
+                "down_unit": "B/s",
+                "down_raw": 0.0
             },
             "power_profile": "balanced",
             "brightness": {
@@ -400,6 +402,80 @@ ShellRoot {
                             }
                         }
                     }
+
+                    TapHandler {
+                        onTapped: panel.currentPopup = monitorPopup
+                    }
+
+                    MyPopup {
+                        id: monitorPopup
+                        target: monitorCapsule
+                        active: panel.currentPopup === monitorPopup
+
+                        Column {
+                            width: parent.width
+                            spacing: 12
+
+                            Text {
+                                text: "System Statistics"
+                                color: Theme.fg
+                                font.bold: true
+                                font.family: Theme.globalFont
+                                font.pixelSize: 14
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                Text {
+                                    text: "CPU: " + Math.round(root.sysStats.cpu * 100) + "%"
+                                    color: Theme.fg
+                                    font.pixelSize: 12
+                                    font.family: Theme.globalFont
+                                }
+                                LineChart {
+                                    width: parent.width
+                                    height: 40
+                                    value: root.sysStats.cpu
+                                    lineColor: "#f38ba8"
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                Text {
+                                    text: "Memory: " + Math.round(root.sysStats.mem * 100) + "%"
+                                    color: Theme.fg
+                                    font.pixelSize: 12
+                                    font.family: Theme.globalFont
+                                }
+                                LineChart {
+                                    width: parent.width
+                                    height: 40
+                                    value: root.sysStats.mem
+                                    lineColor: "#fab387"
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                Text {
+                                    text: "Temperature: " + Math.round(root.sysStats.temp * 100) + "°C"
+                                    color: Theme.fg
+                                    font.pixelSize: 12
+                                    font.family: Theme.globalFont
+                                }
+                                LineChart {
+                                    width: parent.width
+                                    height: 40
+                                    value: root.sysStats.temp
+                                    lineColor: "#f9e2af"
+                                }
+                            }
+                        }
+                    }
                 }
 
                 MyCapsule {
@@ -473,6 +549,66 @@ ShellRoot {
                                     color: Theme.fg
                                     font.bold: true
                                     font.family: Theme.globalFont
+                                }
+                            }
+                        }
+                    }
+
+                    TapHandler {
+                        onTapped: panel.currentPopup = netPopup
+                    }
+
+                    MyPopup {
+                        id: netPopup
+                        target: netCapsule
+                        active: panel.currentPopup === netPopup
+
+                        Column {
+                            width: parent.width
+                            spacing: 12
+
+                            Text {
+                                text: "Network Usage"
+                                color: Theme.fg
+                                font.bold: true
+                                font.family: Theme.globalFont
+                                font.pixelSize: 14
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                Text {
+                                    text: "Upload: " + root.sysStats.net.up + " " + root.sysStats.net.up_unit
+                                    color: Theme.fg
+                                    font.pixelSize: 12
+                                    font.family: Theme.globalFont
+                                }
+                                LineChart {
+                                    width: parent.width
+                                    height: 40
+                                    value: root.sysStats.net.up_raw
+                                    lineColor: "#a6e3a1"
+                                    autoScale: true
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 4
+                                Text {
+                                    text: "Download: " + root.sysStats.net.down + " " + root.sysStats.net.down_unit
+                                    color: Theme.fg
+                                    font.pixelSize: 12
+                                    font.family: Theme.globalFont
+                                }
+                                LineChart {
+                                    width: parent.width
+                                    height: 40
+                                    value: root.sysStats.net.down_raw
+                                    lineColor: "#89b4fa"
+                                    autoScale: true
+                                    inverted: true
                                 }
                             }
                         }
