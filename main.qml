@@ -18,6 +18,10 @@ import "components"
 ShellRoot {
     id: root
 
+    property real lastBrightness: 0.5
+    property real lastVolume: 0.5
+    property string lastVolumeApprox: ""
+
     Item {
         Niri {
             id: niri
@@ -95,6 +99,29 @@ ShellRoot {
                     let jsonObject = JSON.parse(cleanData);
 
                     root.recursiveUpdate(root.sysStats, jsonObject);
+
+                    // Check for OSD updates after full packet update
+                    if (jsonObject.brightness !== undefined) {
+                        if (Math.abs(root.sysStats.brightness.value - lastBrightness) > 0.005) {
+                            if (panel.currentPopup !== adjustDetailPopup) {
+                                osd.show("brightness", root.sysStats.brightness.value, root.sysStats.brightness.approx);
+                            }
+                            lastBrightness = root.sysStats.brightness.value;
+                        }
+                    }
+
+                    if (jsonObject.volume !== undefined) {
+                        let volumeChanged = Math.abs(root.sysStats.volume.value - lastVolume) > 0.005;
+                        let muteChanged = root.sysStats.volume.approx !== lastVolumeApprox;
+
+                        if (volumeChanged || muteChanged) {
+                            if (panel.currentPopup !== adjustDetailPopup) {
+                                osd.show("volume", root.sysStats.volume.value, root.sysStats.volume.approx);
+                            }
+                            lastVolume = root.sysStats.volume.value;
+                            lastVolumeApprox = root.sysStats.volume.approx;
+                        }
+                    }
                 } catch (e) {
                     console.log("JSON: ", e, "content: ", data);
                 }
@@ -1231,6 +1258,23 @@ ShellRoot {
                         minutes.text = Qt.formatDateTime(date, "mm");
                     }
                 }
+            }
+        }
+    }
+
+    OSDPopup {
+        id: osd
+        onMoved: (type, value) => {
+            if (type === "brightness") {
+                writeOutput({
+                    "action": "set_brightness",
+                    "value": value
+                });
+            } else {
+                writeOutput({
+                    "action": "set_volume",
+                    "value": value
+                });
             }
         }
     }

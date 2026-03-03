@@ -38,7 +38,8 @@ Canvas {
         let maxValue = 1.0;
         if (autoScale) {
             maxValue = Math.max(..._history);
-            if (maxValue <= 0) maxValue = 1.0;
+            if (maxValue <= 0)
+                maxValue = 1.0;
         }
 
         ctx.beginPath();

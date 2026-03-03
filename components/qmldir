@@ -6,3 +6,4 @@ LineChart 1.0 LineChart.qml
 MySlider 1.0 MySlider.qml
 MyCombo 1.0 MyCombo.qml
 TrayMenu 1.0 TrayMenu.qml
+OSDPopup 1.0 OSDPopup.qml
