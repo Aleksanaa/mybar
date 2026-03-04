@@ -15,33 +15,44 @@ async def system_monitor(writer):
     try:
         temps = psutil.sensors_temperatures()
         if temps:
+            # First pass: look for known CPU sensors
             for name, entries in temps.items():
-                # Prioritize common CPU temperature sensor names
-                if "coretemp" in name or "k10temp" in name or "cpu_thermal" in name:
+                if any(
+                    x in name.lower()
+                    for x in ["coretemp", "k10temp", "cpu_thermal", "zenpower"]
+                ):
                     for i, entry in enumerate(entries):
-                        # Ensure the sensor reports a current temperature
                         if entry.current is not None:
-                            # Use entry.high if valid, otherwise default to 110.0
-                            if entry.high is not None and entry.high > temp_min:
-                                temp_max = entry.high
-                            else:
-                                temp_max = 110.0  # Default max temp if 'high' is not available or too low
+                            temp_max = (
+                                entry.high
+                                if (entry.high and entry.high > temp_min)
+                                else 100.0
+                            )
                             sensor_name, sensor_index = name, i
-                            break  # Found a suitable entry for this sensor name
-                if sensor_name:  # Found a suitable sensor name and entry
+                            break
+                if sensor_name:
                     break
+
+            # Second pass: fallback to any sensor with a reasonable value if none found
+            if not sensor_name:
+                for name, entries in temps.items():
+                    for i, entry in enumerate(entries):
+                        if entry.current is not None and 20.0 < entry.current < 110.0:
+                            temp_max = (
+                                entry.high
+                                if (entry.high and entry.high > temp_min)
+                                else 100.0
+                            )
+                            sensor_name, sensor_index = name, i
+                            break
+                    if sensor_name:
+                        break
     except Exception as e:
         print(f"Error initializing temperature sensor: {e}", file=sys.stderr)
-        # If an error occurs during initialization, treat as if no sensor was found
         sensor_name = None
 
-    if (
-        sensor_name is None
-    ):  # Only print warning if NO sensor (even with default high) was found
-        print(
-            "Warning: No CPU temperature sensor found. Temp monitoring will be disabled.",
-            file=sys.stderr,
-        )
+    if sensor_name is None:
+        print("Warning: No suitable temperature sensor found.", file=sys.stderr)
 
     # --- CPU Usage Initialization ---
     psutil.cpu_percent(interval=None)
@@ -51,38 +62,49 @@ async def system_monitor(writer):
 
         # --- CPU and Memory ---
         cpu_percent = psutil.cpu_percent(interval=None) / 100.0
-        mem_percent = psutil.virtual_memory().percent / 100.0
+        cpu_percents = [
+            round(p / 100.0, 2) for p in psutil.cpu_percent(interval=None, percpu=True)
+        ]
+        mem = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        cpu_freq = psutil.cpu_freq()
 
         response = {
             "cpu": round(cpu_percent, 2),
-            "mem": round(mem_percent, 2),
+            "cpus": cpu_percents,
+            "mem": round(mem.percent / 100.0, 2),
+            "swap": round(swap.percent / 100.0, 2),
+            "temp": 0.0,
+            "temp_c": 0,
         }
 
+        if cpu_freq:
+            response["cpu_freq"] = {
+                "current": round(cpu_freq.current / 1000.0, 2),
+                "max": round((cpu_freq.max or cpu_freq.current) / 1000.0, 2),
+            }
+        else:
+            response["cpu_freq"] = {"current": 0.0, "max": 0.0}
+
         # --- Temperature ---
-        if sensor_name and temp_max is not None:
+        if sensor_name:
             try:
                 current_temp_entry = psutil.sensors_temperatures().get(sensor_name)
                 if current_temp_entry and sensor_index < len(current_temp_entry):
                     current_temp = current_temp_entry[sensor_index].current
                     if current_temp is not None:
-                        # Normalize the temperature
-                        # Avoid division by zero if temp_max somehow ended up <= temp_min
+                        response["temp_c"] = int(current_temp)
                         if (temp_max - temp_min) > 0:
                             normalized_temp = (current_temp - temp_min) / (
                                 temp_max - temp_min
                             )
-                            # Clamp the value between 0.0 and 1.0
-                            clamped_temp = max(0.0, min(1.0, normalized_temp))
-                            response["temp"] = round(clamped_temp, 2)
+                            response["temp"] = round(
+                                max(0.0, min(1.0, normalized_temp)), 2
+                            )
                         else:
-                            # If for some reason temp_max is not greater than temp_min,
-                            # report 0.0 or 1.0 based on current_temp relation to temp_min
                             response["temp"] = 0.0 if current_temp <= temp_min else 1.0
             except Exception as e:
-                # Handle cases where sensor might become unavailable or error out mid-run
-                print(
-                    f"Error reading temperature sensor at runtime: {e}", file=sys.stderr
-                )
-                sensor_name = None  # Stop trying if it fails consistently
+                print(f"Error reading temperature sensor: {e}", file=sys.stderr)
+                sensor_name = None
 
         await write_json(writer, response)

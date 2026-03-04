@@ -4,12 +4,13 @@ import Quickshell
 PopupWindow {
     id: root
     property Item target: null
+    property real preferredWidth: 220
 
     default property alias content: contentContainer.data
     property bool active: false
 
     visible: active
-    implicitWidth: 220
+    implicitWidth: preferredWidth
     implicitHeight: contentContainer.implicitHeight + 20
     color: "transparent"
 
@@ -21,7 +22,8 @@ PopupWindow {
     }
 
     Rectangle {
-        anchors.fill: parent
+        width: parent.width
+        height: contentContainer.implicitHeight + 20
         color: Theme.bg
         border.color: Theme.border
         border.width: 2
@@ -31,11 +33,11 @@ PopupWindow {
         // This is the content slot
         Column {
             id: contentContainer
+            width: parent.width - 20
             anchors {
-                left: parent.left
-                right: parent.right
+                horizontalCenter: parent.horizontalCenter
                 top: parent.top
-                margins: 10
+                topMargin: 10
             }
             spacing: 8
             // Content defined externally will be displayed here

@@ -23,8 +23,15 @@ ShellRoot {
 
     property var sysStats: ({
             "cpu": 0.01,
+            "cpus": [],
+            "cpu_freq": {
+                "current": 0.0,
+                "max": 0.0
+            },
             "mem": 0.01,
+            "swap": 0.01,
             "temp": 0.01,
+            "temp_c": 0,
             "bat": {
                 "value": "XX",
                 "approx": "050",
@@ -581,8 +588,9 @@ ShellRoot {
                         id: monitorPopup
                         target: monitorCapsule
                         active: panel.currentPopup === monitorPopup
+                        preferredWidth: 250
 
-                        Column {
+                        ColumnLayout {
                             width: parent.width
                             spacing: 12
 
@@ -592,17 +600,30 @@ ShellRoot {
                                 font.bold: true
                                 font.family: Theme.globalFont
                                 font.pixelSize: 14
+                                Layout.bottomMargin: 2
                             }
 
-                            Column {
-                                width: parent.width
-                                spacing: 4
+                            // --- CPU Core Section ---
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
                                 RowLayout {
-                                    width: parent.width
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    IconImage {
+                                        source: Quickshell.iconPath("cpu-symbolic")
+                                        implicitSize: 16
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: "#f38ba8"
+                                        }
+                                    }
                                     Text {
-                                        text: "CPU"
+                                        text: "CPU Cores"
                                         color: Theme.fg
                                         font.pixelSize: 12
+                                        font.bold: true
                                         font.family: Theme.globalFont
                                     }
                                     Item {
@@ -611,73 +632,298 @@ ShellRoot {
                                     Text {
                                         text: Math.round(root.sysStats.cpu * 100) + "%"
                                         color: Theme.fg
-                                        font.pixelSize: 12
+                                        font.pixelSize: 11
                                         font.family: Theme.globalFont
                                     }
                                 }
-                                LineChart {
-                                    width: parent.width
-                                    height: 40
-                                    value: root.sysStats.cpu
-                                    lineColor: "#f38ba8"
+
+                                // Per-core mini bars
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    Repeater {
+                                        model: root.sysStats.cpus
+                                        Rectangle {
+                                            width: (parent.width - (root.sysStats.cpus.length - 1) * parent.spacing) / root.sysStats.cpus.length
+                                            height: 12
+                                            color: "#313244"
+                                            radius: 2
+                                            Rectangle {
+                                                width: parent.width
+                                                height: parent.height * modelData
+                                                anchors.bottom: parent.bottom
+                                                radius: 2
+                                                color: modelData > 0.8 ? "#f38ba8" : (modelData > 0.5 ? "#fab387" : "#a6e3a1")
+                                                Behavior on height {
+                                                    NumberAnimation {
+                                                        duration: 300
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
-                            Column {
-                                width: parent.width
-                                spacing: 4
-                                RowLayout {
-                                    width: parent.width
-                                    Text {
-                                        text: "Memory"
-                                        color: Theme.fg
-                                        font.pixelSize: 12
-                                        font.family: Theme.globalFont
-                                    }
-                                    Item {
+                            // --- Grid for other metrics ---
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: 2
+                                columnSpacing: 16
+                                rowSpacing: 10
+
+                                // Memory
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    RowLayout {
                                         Layout.fillWidth: true
+                                        IconImage {
+                                            source: Quickshell.iconPath("memory-symbolic")
+                                            implicitSize: 14
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: "#fab387"
+                                            }
+                                        }
+                                        Text {
+                                            text: "RAM"
+                                            color: Theme.fg
+                                            font.pixelSize: 10
+                                            font.family: Theme.globalFont
+                                        }
+                                        Item {
+                                            Layout.fillWidth: true
+                                        }
+                                        Text {
+                                            text: Math.round(root.sysStats.mem * 100) + "%"
+                                            color: Theme.fg
+                                            font.pixelSize: 9
+                                            font.family: Theme.globalFont
+                                        }
                                     }
-                                    Text {
-                                        text: Math.round(root.sysStats.mem * 100) + "%"
-                                        color: Theme.fg
-                                        font.pixelSize: 12
-                                        font.family: Theme.globalFont
+                                    Rectangle {
+                                        height: 4
+                                        Layout.fillWidth: true
+                                        color: "#313244"
+                                        radius: 2
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * root.sysStats.mem
+                                            color: "#fab387"
+                                            radius: 2
+                                            Behavior on width {
+                                                NumberAnimation {
+                                                    duration: 300
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                LineChart {
-                                    width: parent.width
-                                    height: 40
-                                    value: root.sysStats.mem
-                                    lineColor: "#fab387"
+
+                                // Swap
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        IconImage {
+                                            source: Quickshell.iconPath("drive-harddisk-symbolic")
+                                            implicitSize: 14
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: "#f9e2af"
+                                            }
+                                        }
+                                        Text {
+                                            text: "SWAP"
+                                            color: Theme.fg
+                                            font.pixelSize: 10
+                                            font.family: Theme.globalFont
+                                        }
+                                        Item {
+                                            Layout.fillWidth: true
+                                        }
+                                        Text {
+                                            text: Math.round(root.sysStats.swap * 100) + "%"
+                                            color: Theme.fg
+                                            font.pixelSize: 9
+                                            font.family: Theme.globalFont
+                                        }
+                                    }
+                                    Rectangle {
+                                        height: 4
+                                        Layout.fillWidth: true
+                                        color: "#313244"
+                                        radius: 2
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * root.sysStats.swap
+                                            color: "#f9e2af"
+                                            radius: 2
+                                            Behavior on width {
+                                                NumberAnimation {
+                                                    duration: 300
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Temperature
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        IconImage {
+                                            source: Quickshell.iconPath("sensors-temperature-symbolic")
+                                            implicitSize: 14
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: "#a6e3a1"
+                                            }
+                                        }
+                                        Text {
+                                            text: "TEMP"
+                                            color: Theme.fg
+                                            font.pixelSize: 10
+                                            font.family: Theme.globalFont
+                                        }
+                                        Item {
+                                            Layout.fillWidth: true
+                                        }
+                                        Text {
+                                            text: root.sysStats.temp_c + "°C"
+                                            color: Theme.fg
+                                            font.pixelSize: 9
+                                            font.family: Theme.globalFont
+                                        }
+                                    }
+                                    Rectangle {
+                                        height: 4
+                                        Layout.fillWidth: true
+                                        color: "#313244"
+                                        radius: 2
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * root.sysStats.temp
+                                            color: "#a6e3a1"
+                                            radius: 2
+                                            Behavior on width {
+                                                NumberAnimation {
+                                                    duration: 300
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Frequency
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        IconImage {
+                                            source: Quickshell.iconPath("speedometer-symbolic")
+                                            implicitSize: 14
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: "#89b4fa"
+                                            }
+                                        }
+                                        Text {
+                                            text: "FREQ"
+                                            color: Theme.fg
+                                            font.pixelSize: 10
+                                            font.family: Theme.globalFont
+                                        }
+                                        Item {
+                                            Layout.fillWidth: true
+                                        }
+                                        Text {
+                                            text: root.sysStats.cpu_freq.current.toFixed(1) + "G"
+                                            color: Theme.fg
+                                            font.pixelSize: 9
+                                            font.family: Theme.globalFont
+                                        }
+                                    }
+                                    Rectangle {
+                                        height: 4
+                                        Layout.fillWidth: true
+                                        color: "#313244"
+                                        radius: 2
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * (root.sysStats.cpu_freq.max > 0 ? (root.sysStats.cpu_freq.current / root.sysStats.cpu_freq.max) : 0)
+                                            color: "#89b4fa"
+                                            radius: 2
+                                            Behavior on width {
+                                                NumberAnimation {
+                                                    duration: 300
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
-                            Column {
-                                width: parent.width
+                            // --- Combined Multi-line Graph ---
+                            ColumnLayout {
+                                Layout.fillWidth: true
                                 spacing: 4
-                                RowLayout {
-                                    width: parent.width
-                                    Text {
-                                        text: "Temperature"
-                                        color: Theme.fg
-                                        font.pixelSize: 12
-                                        font.family: Theme.globalFont
-                                    }
-                                    Item {
-                                        Layout.fillWidth: true
-                                    }
-                                    Text {
-                                        text: Math.round(root.sysStats.temp * 100) + "°C"
-                                        color: Theme.fg
-                                        font.pixelSize: 12
-                                        font.family: Theme.globalFont
-                                    }
+                                Layout.topMargin: 4
+
+                                MultiLineChart {
+                                    Layout.fillWidth: true
+                                    height: 60
+                                    values: [root.sysStats.cpu, root.sysStats.cpu_freq.max > 0 ? (root.sysStats.cpu_freq.current / root.sysStats.cpu_freq.max) : 0, root.sysStats.mem, root.sysStats.temp]
+                                    lineColors: ["#f38ba8", "#89b4fa", "#fab387", "#a6e3a1"]
                                 }
-                                LineChart {
-                                    width: parent.width
-                                    height: 40
-                                    value: root.sysStats.temp
-                                    lineColor: "#f9e2af"
+
+                                // Legend for the graph
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+                                    Layout.alignment: Qt.AlignHCenter
+
+                                    Repeater {
+                                        model: [
+                                            {
+                                                name: "CPU",
+                                                color: "#f38ba8"
+                                            },
+                                            {
+                                                name: "FREQ",
+                                                color: "#89b4fa"
+                                            },
+                                            {
+                                                name: "RAM",
+                                                color: "#fab387"
+                                            },
+                                            {
+                                                name: "TEMP",
+                                                color: "#a6e3a1"
+                                            }
+                                        ]
+                                        RowLayout {
+                                            spacing: 4
+                                            Rectangle {
+                                                width: 8
+                                                height: 8
+                                                radius: 4
+                                                color: modelData.color
+                                            }
+                                            Text {
+                                                text: modelData.name
+                                                color: Theme.fg
+                                                font.pixelSize: 9
+                                                font.family: Theme.globalFont
+                                                opacity: 0.8
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
