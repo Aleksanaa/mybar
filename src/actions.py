@@ -194,6 +194,32 @@ async def handle_toggle_fullscreen(data, writer):
     await NiriConnection().send({"Action": {"FullscreenWindow": {"id": None}}})
 
 
+@action_handler("focus-workspace")
+async def handle_focus_workspace(data, writer):
+    """Focuses a workspace by its index."""
+    index = data.get("index")
+    if index is not None:
+        await NiriConnection().send(
+            {"Action": {"FocusWorkspace": {"reference": {"Index": int(index)}}}}
+        )
+
+
+@action_handler("focus-window")
+async def handle_focus_window(data, writer):
+    """Focuses a window by its ID."""
+    win_id = data.get("id")
+    if win_id is not None:
+        await NiriConnection().send({"Action": {"FocusWindow": {"id": int(win_id)}}})
+
+
+@action_handler("close-window-by-id")
+async def handle_close_window_by_id(data, writer):
+    """Closes a specific window by its ID."""
+    win_id = data.get("id")
+    if win_id is not None:
+        await NiriConnection().send({"Action": {"CloseWindow": {"id": int(win_id)}}})
+
+
 def _toggle_swayidle_blocking():
     """Blocking function to toggle swayidle.service, intended to be run in a thread."""
     bus = dbus.SessionBus()

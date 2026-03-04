@@ -17,6 +17,7 @@ import src.monitors.brightness_monitor
 import src.monitors.volume_monitor
 import src.monitors.swayidle_monitor
 import src.monitors.upower_monitor
+import src.monitors.niri_monitor
 
 from src.monitors.power_profile_monitor import power_profiles_dbus_worker
 from src.monitors.swayidle_monitor import swayidle_dbus_worker

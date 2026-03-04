@@ -70,19 +70,62 @@ ShellRoot {
         })
 
     function recursiveUpdate(target, source) {
-        for (let key in source) {
-            // if target is missing this key, create an empty object first to prevent recursive crashes
-            if (typeof source[key] === 'object' && source[key] !== null) {
-                if (target[key] === undefined || typeof target[key] !== 'object') {
-                    target[key] = {};
+        function update(t, s) {
+            for (var key in s) {
+                if (s[key] === null) {
+                    delete t[key];
+                    continue;
                 }
-                root.recursiveUpdate(target[key], source[key]);
-            } else {
-                target[key] = source[key];
+                // if target is missing this key, create an empty object first to prevent recursive crashes
+                if (typeof s[key] === 'object' && !Array.isArray(s[key])) {
+                    if (t[key] === undefined || typeof t[key] !== 'object') {
+                        t[key] = {};
+                    }
+                    update(t[key], s[key]);
+                } else {
+                    t[key] = s[key];
+                }
             }
         }
+
+        update(target, source);
         // Force trigger UI update signal
         root.sysStatsChanged();
+    }
+
+    function workspaceList(workspaces) {
+        if (!workspaces)
+            return [];
+        var list = [];
+        for (var key in workspaces) {
+            if (workspaces[key] === null)
+                continue;
+            list.push(workspaces[key]);
+        }
+        return list.sort(function (a, b) {
+            return a.idx - b.idx;
+        });
+    }
+
+    function windowList(windows) {
+        if (!windows)
+            return [];
+        var list = [];
+        for (var key in windows) {
+            var win = windows[key];
+            if (win === null)
+                continue;
+
+            // Create a new object manually to avoid modifying the input data
+            // and avoid compatibility issues with the spread operator.
+            var newWin = {};
+            for (var prop in win) {
+                newWin[prop] = win[prop];
+            }
+            newWin.id = key;
+            list.push(newWin);
+        }
+        return list;
     }
 
     Process {
@@ -320,20 +363,124 @@ ShellRoot {
                 }
 
                 Column {
+                    spacing: 4
                     Repeater {
-                        model: niri.workspaces
+                        model: root.workspaceList(root.sysStats.workspaces)
                         delegate: MyCapsule {
-                            height: model.isFocused ? 32 : 20
-                            border.width: model.isFocused ? 2 : 0
+                            id: wsCapsule
+                            height: modelData.is_focused ? 32 : 20
+                            border.width: modelData.is_focused ? 2 : 0
                             Text {
-                                text: model.index
+                                text: modelData.idx
                                 anchors.centerIn: parent
                                 font.family: Theme.globalFont
                                 color: Theme.fg
                                 font.pixelSize: 16
                             }
+
                             TapHandler {
-                                onTapped: niri.focusWorkspaceById(model.id)
+                                onTapped: root.writeOutput({
+                                    "action": "focus-workspace",
+                                    "index": modelData.idx
+                                })
+                                onLongPressed: panel.currentPopup = wsPopup
+                            }
+
+                            MyPopup {
+                                id: wsPopup
+                                target: wsCapsule
+                                active: panel.currentPopup === wsPopup
+
+                                Column {
+                                    spacing: 4
+                                    Text {
+                                        text: "Workspace " + modelData.idx
+                                        font.bold: true
+                                        color: Theme.fg
+                                        font.family: Theme.globalFont
+                                    }
+
+                                    Repeater {
+                                        model: modelData.windows ? root.windowList(modelData.windows) : []
+                                        delegate: Rectangle {
+                                            width: 200
+                                            height: 32
+                                            color: modelData.is_focused ? Theme.border : "transparent"
+                                            radius: 4
+
+                                            Row {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                spacing: 4
+
+                                                // Focus area: Icon and Title
+                                                Item {
+                                                    height: parent.height
+                                                    width: 160 // Reserve space for close button
+
+                                                    Row {
+                                                        anchors.fill: parent
+                                                        anchors.leftMargin: 4
+                                                        spacing: 8
+                                                        IconImage {
+                                                            source: (modelData.app_id && Quickshell.iconPath(modelData.app_id)) ? Quickshell.iconPath(modelData.app_id) : Quickshell.iconPath("image-missing")
+                                                            implicitSize: 20
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                        }
+                                                        Text {
+                                                            text: modelData.title || "Unknown"
+                                                            color: Theme.fg
+                                                            anchors.verticalCenter: parent.verticalCenter
+                                                            font.pixelSize: 12
+                                                            elide: Text.ElideRight
+                                                            width: 120
+                                                        }
+                                                    }
+
+                                                    TapHandler {
+                                                        onTapped: {
+                                                            root.writeOutput({
+                                                                "action": "focus-window",
+                                                                "id": parseInt(modelData.id)
+                                                            });
+                                                            panel.currentPopup = null;
+                                                        }
+                                                    }
+                                                }
+
+                                                // Close button area
+                                                Item {
+                                                    width: 32
+                                                    height: 32
+                                                    anchors.verticalCenter: parent.verticalCenter
+
+                                                    IconImage {
+                                                        anchors.centerIn: parent
+                                                        source: Quickshell.iconPath("window-close-symbolic")
+                                                        implicitSize: 20
+                                                        layer.enabled: true
+                                                        layer.effect: ColorOverlay {
+                                                            color: closeHover.hovered ? "#f38ba8" : Theme.capsule
+                                                        }
+                                                    }
+
+                                                    HoverHandler {
+                                                        id: closeHover
+                                                    }
+
+                                                    TapHandler {
+                                                        onTapped: {
+                                                            root.writeOutput({
+                                                                "action": "close-window-by-id",
+                                                                "id": parseInt(modelData.id)
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
