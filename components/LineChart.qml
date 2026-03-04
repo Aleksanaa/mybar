@@ -8,14 +8,16 @@ Canvas {
     property int maxPoints: 40
     property bool autoScale: false
     property bool inverted: false
+    property var externalHistory: null // Optional: array of historical values
 
     // Internal private memory
     property var _history: []
     property bool enabled: true
+    property int updateInterval: 1000
 
     Timer {
-        interval: 1000
-        running: chart.enabled && chart.visible
+        interval: chart.updateInterval
+        running: chart.enabled && chart.visible && chart.externalHistory === null
         repeat: true
         triggeredOnStart: true
         onTriggered: {
@@ -28,16 +30,25 @@ Canvas {
         }
     }
 
+    onExternalHistoryChanged: {
+        if (externalHistory !== null) {
+            chart.requestPaint();
+        }
+    }
+
     onPaint: {
         var ctx = getContext("2d");
         ctx.reset();
-        if (_history.length < 2)
+
+        let history = externalHistory !== null ? externalHistory : _history;
+        if (history.length < 2)
             return;
 
-        let stepX = width / (maxPoints - 1);
+        let points = externalHistory !== null ? history.length : maxPoints;
+        let stepX = width / (points - 1);
         let maxValue = 1.0;
         if (autoScale) {
-            maxValue = Math.max(..._history);
+            maxValue = Math.max(...history);
             if (maxValue <= 0)
                 maxValue = 1.0;
         }
@@ -45,9 +56,9 @@ Canvas {
         ctx.beginPath();
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 2;
-        for (let i = 0; i < _history.length; i++) {
+        for (let i = 0; i < history.length; i++) {
             let x = i * stepX;
-            let normalizedValue = _history[i] / maxValue;
+            let normalizedValue = history[i] / maxValue;
             let y = inverted ? (normalizedValue * height) : (height - (normalizedValue * height));
             if (i === 0)
                 ctx.moveTo(x, y);
@@ -56,7 +67,7 @@ Canvas {
         }
         ctx.stroke();
 
-        ctx.lineTo((_history.length - 1) * stepX, inverted ? 0 : height);
+        ctx.lineTo((history.length - 1) * stepX, inverted ? 0 : height);
         ctx.lineTo(0, inverted ? 0 : height);
         ctx.closePath();
         let grad = ctx.createLinearGradient(0, inverted ? height : 0, 0, inverted ? 0 : height);

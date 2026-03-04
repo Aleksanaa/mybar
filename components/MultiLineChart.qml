@@ -12,9 +12,10 @@ Canvas {
 
     property var _history: []
     property bool enabled: true
+    property int updateInterval: 1000
 
     Timer {
-        interval: 1000
+        interval: chart.updateInterval
         running: chart.enabled && chart.visible
         repeat: true
         triggeredOnStart: true

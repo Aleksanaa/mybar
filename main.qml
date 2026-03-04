@@ -38,8 +38,12 @@ ShellRoot {
                 "charging": true,
                 "time_to_empty": 0,
                 "time_to_full": 0,
-                "state": 0
+                "state": 0,
+                "energy_rate": 0.0,
+                "voltage": 0.0,
+                "capacity": 100.0
             },
+            "bat_history": [],
             "net": {
                 "up": "X.XX",
                 "up_unit": "B/s",
@@ -1308,110 +1312,217 @@ ShellRoot {
                         id: batDetailPopup
                         target: batCapsule
                         active: panel.currentPopup === batDetailPopup
+                        preferredWidth: 270
 
-                        Row {
-                            spacing: 5
-                            IconImage {
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath(`battery-${root.sysStats.bat.approx}${root.sysStats.bat.charging ? "-charging" : ""}-symbolic`)
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
-                                }
-                            }
-                            Text {
-                                text: `Battery: ${root.sysStats.bat.value}%`
-                                color: Theme.fg
-                            }
-                        }
-
-                        Row {
-                            spacing: 5
-                            IconImage {
-                                anchors.verticalCenter: parent.verticalCenter
-                                source: Quickshell.iconPath("preferences-system-time-symbolic")
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
-                                }
-                            }
-                            Text {
-                                text: {
-                                    let timeText = "";
-                                    if (root.sysStats.bat.state === 1 && root.sysStats.bat.time_to_full > 0) {
-                                        let hours = Math.floor(root.sysStats.bat.time_to_full / 3600);
-                                        let minutes = Math.floor((root.sysStats.bat.time_to_full % 3600) / 60);
-                                        timeText = `Full in ${hours} hours ${minutes} minutes`;
-                                    } else if (root.sysStats.bat.state === 2 && root.sysStats.bat.time_to_empty > 0) {
-                                        let hours = Math.floor(root.sysStats.bat.time_to_empty / 3600);
-                                        let minutes = Math.floor((root.sysStats.bat.time_to_empty % 3600) / 60);
-                                        timeText = `Empty in ${hours} hours ${minutes} minutes`;
-                                    } else if (root.sysStats.bat.state === 4) {
-                                        timeText = "Fully charged";
-                                    } else {
-                                        timeText = "Estimating...";
-                                    }
-                                    return timeText;
-                                }
-                                color: Theme.fg
-                            }
-                        }
-
-                        RowLayout {
+                        ColumnLayout {
                             width: parent.width
-                            spacing: 5
-                            IconImage {
-                                Layout.alignment: Qt.AlignVCenter
-                                source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
-                                implicitSize: 16
-                                layer.enabled: true
-                                layer.effect: ColorOverlay {
-                                    color: Theme.accent
-                                }
+                            spacing: 12
+
+                            Text {
+                                text: "Battery & Power"
+                                color: Theme.fg
+                                font.bold: true
+                                font.family: Theme.globalFont
+                                font.pixelSize: 14
+                                Layout.bottomMargin: 2
                             }
-                            MyCombo {
+
+                            // --- Detailed Status ---
+                            RowLayout {
                                 Layout.fillWidth: true
-                                model: [
-                                    {
-                                        name: "Power Saver",
-                                        id: "power-saver"
-                                    },
-                                    {
-                                        name: "Balanced",
-                                        id: "balanced"
-                                    },
-                                    {
-                                        name: "Performance",
-                                        id: "performance"
-                                    }
-                                ]
-                                currentIndex: {
-                                    let prof = root.sysStats.power_profile;
-                                    if (prof === "power-saver")
-                                        return 0;
-                                    if (prof === "balanced")
-                                        return 1;
-                                    if (prof === "performance")
-                                        return 2;
-                                    return 1;
-                                }
-                                onActivated: writeOutput({
-                                    "action": "set_power_profile",
-                                    "profile": model[currentIndex].id
-                                })
-                            }
-                        }
-
-                        Item {
-                            width: parent.width
-                            height: inhibitRow.implicitHeight
-                            Row {
-                                id: inhibitRow
-                                spacing: 5
+                                spacing: 10
                                 IconImage {
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: Quickshell.iconPath(`battery-${root.sysStats.bat.approx}${root.sysStats.bat.charging ? "-charging" : ""}-symbolic`)
+                                    implicitSize: 24
+                                    layer.enabled: true
+                                    layer.effect: ColorOverlay {
+                                        color: Theme.accent
+                                    }
+                                }
+                                ColumnLayout {
+                                    spacing: 0
+                                    Text {
+                                        text: root.sysStats.bat.value + "%"
+                                        color: Theme.fg
+                                        font.pixelSize: 18
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                    Text {
+                                        text: {
+                                            if (root.sysStats.bat.state === 1)
+                                                return "Charging";
+                                            if (root.sysStats.bat.state === 2)
+                                                return "Discharging";
+                                            if (root.sysStats.bat.state === 4)
+                                                return "Fully Charged";
+                                            return "Unknown State";
+                                        }
+                                        color: Theme.fg
+                                        font.pixelSize: 11
+                                        font.family: Theme.globalFont
+                                        opacity: 0.8
+                                    }
+                                }
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+                                Text {
+                                    text: {
+                                        let time = 0;
+                                        if (root.sysStats.bat.state === 1)
+                                            time = root.sysStats.bat.time_to_full;
+                                        else if (root.sysStats.bat.state === 2)
+                                            time = root.sysStats.bat.time_to_empty;
+                                        if (time <= 0)
+                                            return "";
+                                        let h = Math.floor(time / 3600);
+                                        let m = Math.floor((time % 3600) / 60);
+                                        return `${h}h ${m}m`;
+                                    }
+                                    color: Theme.fg
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    font.family: Theme.globalFont
+                                }
+                            }
+
+                            // --- Detailed Stats ---
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+                                Layout.topMargin: -4
+
+                                RowLayout {
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("speedometer-symbolic")
+                                        implicitSize: 12
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: root.sysStats.bat.voltage + "V"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                }
+
+                                RowLayout {
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("view-refresh-symbolic")
+                                        implicitSize: 12
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: "Health: " + root.sysStats.bat.capacity + "%"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                }
+                            }
+
+                            // --- Battery History (24 Vertical Bars) ---
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                Layout.topMargin: 4
+                                Text {
+                                    text: "Last 24 Hours"
+                                    color: Theme.fg
+                                    font.pixelSize: 10
+                                    font.family: Theme.globalFont
+                                    opacity: 0.8
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    height: 50
+                                    spacing: 3
+                                    Repeater {
+                                        model: root.sysStats.bat_history
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.fillHeight: true
+                                            color: Theme.fg
+                                            opacity: 0.1
+                                            radius: 1
+
+                                            Rectangle {
+                                                anchors.bottom: parent.bottom
+                                                anchors.left: parent.left
+                                                anchors.right: parent.right
+                                                height: Math.max(1, parent.height * (modelData / 100.0))
+                                                color: Theme.accent
+                                                radius: 1
+                                                // Highlighting recent values or making them more visible
+                                                opacity: 0.6 + (index / 23.0) * 0.4
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // --- Power Mode Selector ---
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Layout.topMargin: 4
+                                IconImage {
+                                    source: Quickshell.iconPath(`power-profile-${root.sysStats.power_profile}-symbolic`)
+                                    implicitSize: 16
+                                    layer.enabled: true
+                                    layer.effect: ColorOverlay {
+                                        color: Theme.accent
+                                    }
+                                }
+                                MyCombo {
+                                    Layout.fillWidth: true
+                                    model: [
+                                        {
+                                            name: "Power Saver",
+                                            id: "power-saver"
+                                        },
+                                        {
+                                            name: "Balanced",
+                                            id: "balanced"
+                                        },
+                                        {
+                                            name: "Performance",
+                                            id: "performance"
+                                        }
+                                    ]
+                                    currentIndex: {
+                                        let prof = root.sysStats.power_profile;
+                                        if (prof === "power-saver")
+                                            return 0;
+                                        if (prof === "balanced")
+                                            return 1;
+                                        if (prof === "performance")
+                                            return 2;
+                                        return 1;
+                                    }
+                                    onActivated: writeOutput({
+                                        "action": "set_power_profile",
+                                        "profile": model[currentIndex].id
+                                    })
+                                }
+                            }
+
+                            // --- Idle Inhibit Toggle ---
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                IconImage {
                                     source: Quickshell.iconPath(`my-caffeine-${root.sysStats.swayidle.active ? "off" : "on"}-symbolic`)
                                     implicitSize: 16
                                     layer.enabled: true
@@ -1422,38 +1533,40 @@ ShellRoot {
                                 Text {
                                     text: "Idle Inhibit"
                                     color: Theme.fg
+                                    font.pixelSize: 11
+                                    font.family: Theme.globalFont
+                                    Layout.fillWidth: true
                                 }
-                            }
-
-                            Rectangle {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 40
-                                height: 20
-                                radius: 10
-                                color: root.sysStats.swayidle.active ? Theme.bg : Theme.accent
-                                border.color: Theme.border
-                                border.width: 1
-
                                 Rectangle {
-                                    width: 16
-                                    height: 16
-                                    radius: 8
-                                    color: Theme.fg
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    x: root.sysStats.swayidle.active ? 2 : 22
-                                    Behavior on x {
-                                        NumberAnimation {
-                                            duration: 100
+                                    width: 36
+                                    height: 18
+                                    radius: 9
+                                    color: root.sysStats.swayidle.active ? "#313244" : Theme.accent
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: 200
                                         }
                                     }
+                                    Rectangle {
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: Theme.fg
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        x: root.sysStats.swayidle.active ? 2 : 20
+                                        Behavior on x {
+                                            NumberAnimation {
+                                                duration: 200
+                                                easing.type: Easing.OutCubic
+                                            }
+                                        }
+                                    }
+                                    TapHandler {
+                                        onTapped: writeOutput({
+                                            "action": "toggle_swayidle"
+                                        })
+                                    }
                                 }
-                            }
-
-                            TapHandler {
-                                onTapped: writeOutput({
-                                    "action": "toggle_swayidle"
-                                })
                             }
                         }
                     }
