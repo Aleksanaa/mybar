@@ -125,6 +125,7 @@ def upower_dbus_worker(loop):
             time_to_empty = int(props_interface.Get(DEVICE_INTERFACE, "TimeToEmpty"))
             time_to_full = int(props_interface.Get(DEVICE_INTERFACE, "TimeToFull"))
             energy_rate = float(props_interface.Get(DEVICE_INTERFACE, "EnergyRate"))
+            energy = float(props_interface.Get(DEVICE_INTERFACE, "Energy"))
             voltage = float(props_interface.Get(DEVICE_INTERFACE, "Voltage"))
             capacity = float(props_interface.Get(DEVICE_INTERFACE, "Capacity"))
             charging = state == 1
@@ -141,6 +142,7 @@ def upower_dbus_worker(loop):
                 "time_to_full": time_to_full,
                 "state": state,
                 "energy_rate": round(energy_rate, 2),
+                "energy": round(energy, 2),
                 "voltage": round(voltage, 2),
                 "capacity": round(capacity, 2),
             }

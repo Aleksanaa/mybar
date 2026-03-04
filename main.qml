@@ -1316,7 +1316,7 @@ ShellRoot {
 
                         ColumnLayout {
                             width: parent.width
-                            spacing: 12
+                            spacing: 15
 
                             Text {
                                 text: "Battery & Power"
@@ -1387,51 +1387,6 @@ ShellRoot {
                                 }
                             }
 
-                            // --- Detailed Stats ---
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 16
-                                Layout.topMargin: -4
-
-                                RowLayout {
-                                    spacing: 4
-                                    IconImage {
-                                        source: Quickshell.iconPath("speedometer-symbolic")
-                                        implicitSize: 12
-                                        layer.enabled: true
-                                        layer.effect: ColorOverlay {
-                                            color: Theme.accent
-                                        }
-                                    }
-                                    Text {
-                                        text: root.sysStats.bat.voltage + "V"
-                                        color: Theme.fg
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        font.family: Theme.globalFont
-                                    }
-                                }
-
-                                RowLayout {
-                                    spacing: 4
-                                    IconImage {
-                                        source: Quickshell.iconPath("view-refresh-symbolic")
-                                        implicitSize: 12
-                                        layer.enabled: true
-                                        layer.effect: ColorOverlay {
-                                            color: Theme.accent
-                                        }
-                                    }
-                                    Text {
-                                        text: "Health: " + root.sysStats.bat.capacity + "%"
-                                        color: Theme.fg
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                        font.family: Theme.globalFont
-                                    }
-                                }
-                            }
-
                             // --- Battery History (24 Vertical Bars) ---
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -1468,6 +1423,137 @@ ShellRoot {
                                                 opacity: 0.6 + (index / 23.0) * 0.4
                                             }
                                         }
+                                    }
+                                }
+                            }
+
+                            // --- Detailed Stats ---
+                            GridLayout {
+                                columns: 2
+                                Layout.fillWidth: true
+                                rowSpacing: 8
+                                columnSpacing: 16
+                                Layout.topMargin: -4
+
+                                // Row 1: Energy Rate & Energy
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("speedometer-symbolic")
+                                        implicitSize: 14
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: "Rate"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.family: Theme.globalFont
+                                        opacity: 0.7
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.bat.energy_rate + " W"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("battery-symbolic")
+                                        implicitSize: 14
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: "Energy"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.family: Theme.globalFont
+                                        opacity: 0.7
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.bat.energy + " Wh"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                }
+
+                                // Row 2: Voltage & Health
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("bolt-symbolic")
+                                        implicitSize: 14
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: "Voltage"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.family: Theme.globalFont
+                                        opacity: 0.7
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.bat.voltage + " V"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
+                                    }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    IconImage {
+                                        source: Quickshell.iconPath("view-refresh-symbolic")
+                                        implicitSize: 14
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                    }
+                                    Text {
+                                        text: "Health"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.family: Theme.globalFont
+                                        opacity: 0.7
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.bat.capacity + " %"
+                                        color: Theme.fg
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        font.family: Theme.globalFont
                                     }
                                 }
                             }
