@@ -1391,55 +1391,7 @@ ShellRoot {
                         id: clockDetailPopup
                         target: clockCapsule
                         active: panel.currentPopup === clockDetailPopup
-                        implicitHeight: 240
-                        Text {
-                            text: Qt.formatDateTime(new Date(), "dd, MM, yyyy")
-                            color: Theme.fg
-                            font.pixelSize: 20
-                            font.family: Theme.globalFont
-                            Layout.alignment: Qt.AlignHCenter
-                        }
-
-                        DayOfWeekRow {
-                            locale: Qt.locale("zh_CN")
-                            width: parent.width
-
-                            delegate: Text {
-                                text: model.narrowName
-                                font.bold: true
-                                font.pixelSize: 14
-                                font.family: Theme.globalFont
-                                color: Theme.accent
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-                        }
-
-                        MonthGrid {
-                            id: grid
-                            width: parent.width
-                            locale: Qt.locale("zh_CN")
-
-                            month: new Date().getMonth()
-                            year: new Date().getFullYear()
-
-                            delegate: Rectangle {
-                                implicitWidth: 25
-                                implicitHeight: 25
-                                radius: 4
-                                color: "transparent"
-                                border.width: model.today ? 1 : 0
-                                border.color: Theme.fg
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: model.day
-                                    opacity: model.month === grid.month ? 1.0 : 0.5
-                                    color: model.today ? Theme.accent : Theme.fg
-                                    font.pixelSize: 14
-                                }
-                            }
-                        }
+                        MyCalendar {}
                     }
                 }
 
