@@ -162,16 +162,24 @@ ShellRoot {
 
     Process {
         id: vicinae
-        command: ["vicinae", "toggle"]
+        function open() {
+            command = ["vicinae", "open"];
+            running = true;
+        }
         function closeAll() {
+            command = ["vicinae", "close"];
             running = true;
         }
     }
 
     Process {
         id: swaync
-        command: ["swaync-client", "-t"]
+        function open() {
+            command = ["swaync-client", "--open-panel"];
+            running = true;
+        }
         function closeAll() {
+            command = ["swaync-client", "--close-panel"];
             running = true;
         }
     }
@@ -258,7 +266,7 @@ ShellRoot {
 
                     TapHandler {
                         onTapped: {
-                            vicinae.running = true;
+                            vicinae.open();
                             panel.currentPopup = vicinae;
                         }
                         onLongPressed: panel.currentPopup = appMenuPopup
@@ -938,7 +946,7 @@ ShellRoot {
 
                     TapHandler {
                         onTapped: {
-                            swaync.running = true;
+                            swaync.open();
                             panel.currentPopup = swaync;
                         }
                     }
