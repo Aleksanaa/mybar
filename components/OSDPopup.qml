@@ -17,7 +17,7 @@ PanelWindow {
     visible: false
 
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: KeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
 
     // Bottom center positioning: anchor only to bottom
@@ -30,8 +30,8 @@ PanelWindow {
         bottom: 100
     }
 
-    width: 300
-    height: 70
+    implicitWidth: 300
+    implicitHeight: 70
     color: "transparent"
 
     Rectangle {
