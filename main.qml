@@ -12,7 +12,6 @@ import Quickshell.Widgets
 import Quickshell.Services.SystemTray
 import Quickshell.Services.Pipewire
 import Qt5Compat.GraphicalEffects
-import Niri 0.1
 import "components"
 
 ShellRoot {
@@ -21,17 +20,6 @@ ShellRoot {
     property real lastBrightness: 0.5
     property real lastVolume: 0.5
     property string lastVolumeApprox: ""
-
-    Item {
-        Niri {
-            id: niri
-            Component.onCompleted: connect()
-            onConnected: console.log("Connected to niri")
-            onErrorOccurred: function (error) {
-                console.error("Error:", error);
-            }
-        }
-    }
 
     property var sysStats: ({
             "cpu": 0.01,

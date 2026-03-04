@@ -6,13 +6,9 @@
   gobject-introspection,
   wtype,
   python3,
-  callPackage,
   runCommand,
 }:
 
-let
-  qml-niri = callPackage ./niri.nix { };
-in
 runCommand "mybar"
   {
     src = lib.cleanSource ../.;
@@ -24,7 +20,6 @@ runCommand "mybar"
     ];
 
     buildInputs = [
-      qml-niri
       qt6.qtbase
       qt6.qt5compat
     ];
