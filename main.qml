@@ -1397,30 +1397,30 @@ ShellRoot {
                                     color: Theme.fg
                                     font.pixelSize: 10
                                     font.family: Theme.globalFont
-                                    opacity: 0.8
+                                    opacity: 0.6
+                                    Layout.bottomMargin: 4
                                 }
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    height: 50
-                                    spacing: 3
+                                    height: 48
+                                    spacing: 2
                                     Repeater {
                                         model: root.sysStats.bat_history
                                         Rectangle {
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
-                                            color: Theme.fg
-                                            opacity: 0.1
+                                            color: Theme.border
                                             radius: 1
 
                                             Rectangle {
                                                 anchors.bottom: parent.bottom
                                                 anchors.left: parent.left
                                                 anchors.right: parent.right
-                                                height: Math.max(1, parent.height * (modelData / 100.0))
+                                                height: Math.max(2, parent.height * (modelData / 100.0))
                                                 color: Theme.accent
                                                 radius: 1
-                                                // Highlighting recent values or making them more visible
-                                                opacity: 0.6 + (index / 23.0) * 0.4
+                                                // Recent values are fully opaque, older ones slightly fade
+                                                opacity: 0.4 + (index / 23.0) * 0.4
                                             }
                                         }
                                     }
