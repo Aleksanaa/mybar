@@ -589,11 +589,23 @@ ShellRoot {
                             Column {
                                 width: parent.width
                                 spacing: 4
-                                Text {
-                                    text: "CPU: " + Math.round(root.sysStats.cpu * 100) + "%"
-                                    color: Theme.fg
-                                    font.pixelSize: 12
-                                    font.family: Theme.globalFont
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "CPU"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: Math.round(root.sysStats.cpu * 100) + "%"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
                                 }
                                 LineChart {
                                     width: parent.width
@@ -606,11 +618,23 @@ ShellRoot {
                             Column {
                                 width: parent.width
                                 spacing: 4
-                                Text {
-                                    text: "Memory: " + Math.round(root.sysStats.mem * 100) + "%"
-                                    color: Theme.fg
-                                    font.pixelSize: 12
-                                    font.family: Theme.globalFont
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "Memory"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: Math.round(root.sysStats.mem * 100) + "%"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
                                 }
                                 LineChart {
                                     width: parent.width
@@ -623,11 +647,23 @@ ShellRoot {
                             Column {
                                 width: parent.width
                                 spacing: 4
-                                Text {
-                                    text: "Temperature: " + Math.round(root.sysStats.temp * 100) + "°C"
-                                    color: Theme.fg
-                                    font.pixelSize: 12
-                                    font.family: Theme.globalFont
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "Temperature"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: Math.round(root.sysStats.temp * 100) + "°C"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
                                 }
                                 LineChart {
                                     width: parent.width
@@ -740,11 +776,23 @@ ShellRoot {
                             Column {
                                 width: parent.width
                                 spacing: 4
-                                Text {
-                                    text: "Upload: " + root.sysStats.net.up + " " + root.sysStats.net.up_unit
-                                    color: Theme.fg
-                                    font.pixelSize: 12
-                                    font.family: Theme.globalFont
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "Upload"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.net.up + " " + root.sysStats.net.up_unit
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
                                 }
                                 LineChart {
                                     width: parent.width
@@ -758,11 +806,23 @@ ShellRoot {
                             Column {
                                 width: parent.width
                                 spacing: 4
-                                Text {
-                                    text: "Download: " + root.sysStats.net.down + " " + root.sysStats.net.down_unit
-                                    color: Theme.fg
-                                    font.pixelSize: 12
-                                    font.family: Theme.globalFont
+                                RowLayout {
+                                    width: parent.width
+                                    Text {
+                                        text: "Download"
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+                                    Text {
+                                        text: root.sysStats.net.down + " " + root.sysStats.net.down_unit
+                                        color: Theme.fg
+                                        font.pixelSize: 12
+                                        font.family: Theme.globalFont
+                                    }
                                 }
                                 LineChart {
                                     width: parent.width
