@@ -360,7 +360,11 @@ ShellRoot {
                                     TapHandler {
                                         onTapped: {
                                             itemRunner.running = true;
-                                            panel.currentPopup = null;
+                                            if (modelData.cmd && modelData.cmd[0] === "vicinae") {
+                                                panel.currentPopup = vicinae;
+                                            } else {
+                                                panel.currentPopup = null;
+                                            }
                                         }
                                     }
                                 }
