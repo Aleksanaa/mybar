@@ -43,6 +43,7 @@ runCommand "mybar"
             ps.pygobject3
             ps.pyudev
             ps.pulsectl-asyncio
+            ps.numpy
           ]))
         ]
       } \
