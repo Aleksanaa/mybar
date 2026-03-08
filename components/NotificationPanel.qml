@@ -10,7 +10,10 @@ MyPopup {
     id: notificationPanel
     preferredWidth: 350
 
+    property int updateTrigger: 0
+
     function getDisplayList() {
+        var _ = updateTrigger; // Access for dependency tracking
         var list = root.sysStats.notifications.list;
         if (!list)
             return [];

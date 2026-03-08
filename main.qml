@@ -94,6 +94,14 @@ ShellRoot {
         }
 
         update(target, source);
+
+        // Explicitly trigger signals for top-level keys updated
+        for (var key in source) {
+            if (target.hasOwnProperty(key + "Changed")) {
+                target[key + "Changed"]();
+            }
+        }
+
         // Force trigger UI update signal
         root.sysStatsChanged();
     }
@@ -147,6 +155,10 @@ ShellRoot {
                     let jsonObject = JSON.parse(cleanData);
 
                     root.recursiveUpdate(root.sysStats, jsonObject);
+
+                    if (jsonObject.notifications !== undefined) {
+                        notificationPanel.updateTrigger++;
+                    }
 
                     // Check for OSD updates after full packet update
                     if (jsonObject.brightness !== undefined) {

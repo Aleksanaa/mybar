@@ -11,7 +11,7 @@ Rectangle {
     property bool isPopup: false
     property bool showHeader: true
 
-    signal closed()
+    signal closed
 
     width: parent ? parent.width : 350
     implicitHeight: layout.implicitHeight + 24

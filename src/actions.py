@@ -365,6 +365,15 @@ async def close_notification(data, writer):
         await asyncio.to_thread(service.user_close_notification, int(notification_id))
 
 
+@action_handler("clear-app-notifications")
+async def clear_app_notifications(data, writer):
+    """Clears all notifications for a specific app."""
+    app_name = data.get("app_name")
+    service = get_notification_service()
+    if service and app_name:
+        await asyncio.to_thread(service.clear_app_notifications, app_name)
+
+
 @action_handler("invoke-notification-action")
 async def invoke_notification_action(data, writer):
     """Invokes a notification action."""

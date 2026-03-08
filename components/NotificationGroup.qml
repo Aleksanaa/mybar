@@ -88,12 +88,10 @@ ColumnLayout {
             }
             TapHandler {
                 onTapped: {
-                    for (var i = 0; i < groupRoot.notifications.length; i++) {
-                        root.writeOutput({
-                            "action": "close-notification",
-                            "id": groupRoot.notifications[i].id
-                        });
-                    }
+                    root.writeOutput({
+                        "action": "clear-app-notifications",
+                        "app_name": groupRoot.appName
+                    });
                 }
             }
         }

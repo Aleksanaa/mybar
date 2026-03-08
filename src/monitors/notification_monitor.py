@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import QueueEmpty
 import sys
 import dbus
 import dbus.service
@@ -66,22 +67,20 @@ class NotificationService(dbus.service.Object):
         )
         return notification_id
 
+    def _close_notification(self, id, reason):
+        if id in self.notifications:
+            del self.notifications[id]
+            self.loop.call_soon_threadsafe(
+                self.queue.put_nowait, {"type": "close", "id": int(id)}
+            )
+            self.NotificationClosed(id, reason)
+
     @dbus.service.method("org.freedesktop.Notifications", in_signature="u")
     def CloseNotification(self, id):
-        if id in self.notifications:
-            del self.notifications[id]
-            self.loop.call_soon_threadsafe(
-                self.queue.put_nowait, {"type": "close", "id": int(id)}
-            )
-            self.NotificationClosed(id, 3)  # 3 = closed by call to CloseNotification
+        self._close_notification(id, 3)  # 3 = closed by call to CloseNotification
 
     def user_close_notification(self, id):
-        if id in self.notifications:
-            del self.notifications[id]
-            self.loop.call_soon_threadsafe(
-                self.queue.put_nowait, {"type": "close", "id": int(id)}
-            )
-            self.NotificationClosed(id, 2)  # 2 = closed by user
+        self._close_notification(id, 2)  # 2 = closed by user
 
     @dbus.service.method("org.freedesktop.Notifications", out_signature="as")
     def GetCapabilities(self):
@@ -106,6 +105,13 @@ class NotificationService(dbus.service.Object):
         self.notifications.clear()
         self.loop.call_soon_threadsafe(self.queue.put_nowait, {"type": "clear_all"})
 
+    def clear_app_notifications(self, app_name):
+        ids_to_clear = [
+            id for id, n in self.notifications.items() if n.get("app_name") == app_name
+        ]
+        for id in ids_to_clear:
+            self._close_notification(id, 2)
+
     def set_dnd(self, dnd):
         self.dnd = dnd
         self.loop.call_soon_threadsafe(
@@ -117,14 +123,24 @@ def notification_worker(loop):
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
 
-    # Try to acquire the name
+    # Try to acquire the name, allowing us to replace an existing daemon
+    # and also allowing future instances to replace us.
     try:
         name = dbus.service.BusName(
-            "org.freedesktop.Notifications", bus, do_not_queue=True
+            "org.freedesktop.Notifications",
+            bus,
+            allow_replacement=True,
+            replace_existing=True,
+            do_not_queue=True,
         )
     except dbus.exceptions.NameExistsException:
-        print("Error: Another notification daemon is running.", file=sys.stderr)
-        # We might want to handle this more gracefully, but for now just exit the thread
+        print(
+            "Error: Another notification daemon is running and does not allow replacement.",
+            file=sys.stderr,
+        )
+        return
+    except Exception as e:
+        print(f"Error acquiring D-Bus name: {e}", file=sys.stderr)
         return
 
     service = NotificationService(bus, loop, NOTIFICATION_QUEUE)
@@ -154,41 +170,64 @@ async def notification_monitor(writer):
     )
 
     while True:
+        # Wait for the first event
         event = await NOTIFICATION_QUEUE.get()
-        event_type = event.get("type")
 
-        if event_type == "notify":
-            n = event["notification"]
-            # Check if it replaces an existing one
-            replaced = False
-            for i, existing in enumerate(notifications_list):
-                if existing["id"] == n["id"]:
-                    notifications_list[i] = n
-                    replaced = True
-                    break
-            if not replaced:
-                notifications_list.append(n)
+        # Process the first event and any others currently in the queue
+        events_to_process = [event]
+        while not NOTIFICATION_QUEUE.empty():
+            try:
+                events_to_process.append(NOTIFICATION_QUEUE.get_nowait())
+            except QueueEmpty:
+                break
 
-            # Send the new notification specifically for the popup
-            await write_json(writer, {"notification_popup": n})
+        list_changed = False
+        dnd_changed = False
 
-        elif event_type == "close":
-            notifications_list = [
-                n for n in notifications_list if n["id"] != event["id"]
-            ]
-            await write_json(writer, {"close_notification_popup": event["id"]})
+        for ev in events_to_process:
+            ev_type = ev.get("type")
 
-        elif event_type == "clear_all":
-            notifications_list = []
-            await write_json(writer, {"clear_notification_popup": true})
+            if ev_type == "notify":
+                n = ev["notification"]
+                # Check if it replaces an existing one
+                replaced = False
+                for i, existing in enumerate(notifications_list):
+                    if existing["id"] == n["id"]:
+                        notifications_list[i] = n
+                        replaced = True
+                        break
+                if not replaced:
+                    notifications_list.append(n)
+                list_changed = True
 
-        elif event_type == "dnd":
-            dnd = event["value"]
+                # Send the new notification specifically for the popup immediately
+                await write_json(writer, {"notification_popup": n})
 
-        await write_json(
-            writer, {"notifications": {"list": notifications_list, "dnd": dnd}}
-        )
-        NOTIFICATION_QUEUE.task_done()
+            elif ev_type == "close":
+                original_len = len(notifications_list)
+                notifications_list = [
+                    n for n in notifications_list if n["id"] != ev["id"]
+                ]
+                if len(notifications_list) != original_len:
+                    list_changed = True
+                await write_json(writer, {"close_notification_popup": ev["id"]})
+
+            elif ev_type == "clear_all":
+                notifications_list = []
+                list_changed = True
+                await write_json(writer, {"clear_notification_popup": True})
+
+            elif ev_type == "dnd":
+                dnd = ev["value"]
+                dnd_changed = True
+
+            NOTIFICATION_QUEUE.task_done()
+
+        # Send the full state update only once per batch of events
+        if list_changed or dnd_changed:
+            await write_json(
+                writer, {"notifications": {"list": notifications_list, "dnd": dnd}}
+            )
 
 
 # Export for actions
