@@ -1727,7 +1727,7 @@ ShellRoot {
                             height: brightnessLabelRow.implicitHeight
                             Row {
                                 id: brightnessLabelRow
-                                spacing: 5
+                                spacing: 8
                                 IconImage {
                                     anchors.verticalCenter: parent.verticalCenter
                                     source: Quickshell.iconPath(`brightness-${root.sysStats.brightness.approx}-symbolic`)
@@ -1740,6 +1740,9 @@ ShellRoot {
                                 Text {
                                     text: "Brightness:"
                                     color: Theme.fg
+                                    font.family: Theme.globalFont
+                                    font.pixelSize: 13
+                                    font.bold: true
                                 }
                             }
                             Text {
@@ -1747,11 +1750,14 @@ ShellRoot {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: `${Math.round(root.sysStats.brightness.value * 100)}%`
                                 color: Theme.fg
+                                font.family: Theme.globalFont
+                                font.pixelSize: 13
+                                font.bold: true
                             }
                         }
 
                         MySlider {
-                            implicitWidth: parent.width
+                            width: parent.width
                             value: root.sysStats.brightness.value
                             onMoved: writeOutput({
                                 "action": "set_brightness",
@@ -1759,12 +1765,19 @@ ShellRoot {
                             })
                         }
 
+                        Rectangle {
+                            width: parent.width
+                            height: 1
+                            color: Theme.border
+                            opacity: 0.5
+                        }
+
                         Item {
                             width: parent.width
                             height: volumeLabelRow.implicitHeight
                             Row {
                                 id: volumeLabelRow
-                                spacing: 5
+                                spacing: 8
                                 IconImage {
                                     anchors.verticalCenter: parent.verticalCenter
                                     source: Quickshell.iconPath(`audio-volume-${root.sysStats.volume.approx}-symbolic`)
@@ -1782,6 +1795,9 @@ ShellRoot {
                                 Text {
                                     text: "Volume:"
                                     color: Theme.fg
+                                    font.family: Theme.globalFont
+                                    font.pixelSize: 13
+                                    font.bold: true
                                 }
                             }
                             Text {
@@ -1789,11 +1805,14 @@ ShellRoot {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: `${Math.round(root.sysStats.volume.value * 100)}%`
                                 color: Theme.fg
+                                font.family: Theme.globalFont
+                                font.pixelSize: 13
+                                font.bold: true
                             }
                         }
 
                         MySlider {
-                            implicitWidth: parent.width
+                            width: parent.width
                             value: root.sysStats.volume.value
                             onMoved: writeOutput({
                                 "action": "set_volume",
