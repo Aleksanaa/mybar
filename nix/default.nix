@@ -5,6 +5,7 @@
   wrapGAppsNoGuiHook,
   gobject-introspection,
   wtype,
+  pulseaudio,
   python3,
   runCommand,
 }:
@@ -35,6 +36,7 @@ runCommand "mybar"
       --prefix PATH : ${
         lib.makeBinPath [
           wtype
+          pulseaudio
           (python3.withPackages (ps: [
             ps.psutil
             ps.dbus-python
