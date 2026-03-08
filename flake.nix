@@ -15,13 +15,14 @@
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.treefmt-nix.flakeModule
+        inputs.flake-parts.flakeModules.easyOverlay
       ];
       systems = [
         "x86_64-linux"
         "aarch64-linux"
       ];
       perSystem =
-        { pkgs, ... }:
+        { config, pkgs, ... }:
         {
           devShells = {
             default = pkgs.mkShell {
@@ -43,6 +44,9 @@
           };
           packages = {
             default = pkgs.callPackage ./nix/default.nix { };
+          };
+          overlayAttrs = {
+            mybar = config.packages.default;
           };
           treefmt = {
             programs.black.enable = true;
