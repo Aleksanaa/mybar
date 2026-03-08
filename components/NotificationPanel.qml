@@ -77,7 +77,7 @@ MyPopup {
                 width: 28
                 height: 28
                 radius: 14
-                color: Theme.border
+                color: dndHover.hovered ? Theme.accent : Theme.capsule
 
                 IconImage {
                     anchors.centerIn: parent
@@ -85,7 +85,7 @@ MyPopup {
                     implicitSize: 16
                     layer.enabled: true
                     layer.effect: ColorOverlay {
-                        color: Theme.fg
+                        color: dndHover.hovered ? Theme.bg : Theme.fg
                     }
                 }
 
@@ -105,7 +105,7 @@ MyPopup {
                 width: 28
                 height: 28
                 radius: 14
-                color: Theme.border
+                color: clearHover.hovered ? Theme.accent : Theme.capsule
 
                 IconImage {
                     anchors.centerIn: parent
@@ -113,7 +113,7 @@ MyPopup {
                     implicitSize: 16
                     layer.enabled: true
                     layer.effect: ColorOverlay {
-                        color: Theme.fg
+                        color: clearHover.hovered ? Theme.bg : Theme.fg
                     }
                 }
 

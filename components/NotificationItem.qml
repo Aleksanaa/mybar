@@ -131,7 +131,7 @@ Rectangle {
                     width: actionText.implicitWidth + 20
                     height: 28
                     radius: 14
-                    color: actionHover.hovered ? Theme.accent : Theme.border
+                    color: actionHover.hovered ? Theme.accent : Theme.capsule
 
                     Text {
                         id: actionText
