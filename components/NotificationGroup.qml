@@ -24,12 +24,9 @@ ColumnLayout {
         Layout.rightMargin: 4
 
         IconImage {
-            source: groupRoot.appIcon ? Quickshell.iconPath(groupRoot.appIcon) : Quickshell.iconPath("preferences-desktop-notification-symbolic")
+            id: groupIcon
             implicitSize: 16
-            layer.enabled: true
-            layer.effect: ColorOverlay {
-                color: Theme.accent
-            }
+            source: Theme.resolveAppIcon(groupRoot.appIcon, groupRoot.appName, "preferences-system-notification-symbolic")
         }
 
         Text {

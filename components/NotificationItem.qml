@@ -37,12 +37,12 @@ Rectangle {
             visible: rootItem.showHeader
 
             IconImage {
-                // Fallback to a generic notification icon if none provided
-                source: (rootItem.notification && rootItem.notification.app_icon) ? Quickshell.iconPath(rootItem.notification.app_icon) : Quickshell.iconPath("preferences-desktop-notification-symbolic")
+                id: notificationIcon
                 implicitSize: 18
-                layer.enabled: true
-                layer.effect: ColorOverlay {
-                    color: Theme.accent
+                source: {
+                    if (!rootItem.notification)
+                        return Quickshell.iconPath("preferences-desktop-notification-symbolic");
+                    return Theme.resolveAppIcon(rootItem.notification.app_icon, rootItem.notification.app_name, "preferences-desktop-notification-symbolic");
                 }
             }
 

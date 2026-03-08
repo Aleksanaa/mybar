@@ -454,7 +454,7 @@ ShellRoot {
                                                         anchors.leftMargin: 4
                                                         spacing: 8
                                                         IconImage {
-                                                            source: (modelData.app_id && Quickshell.iconPath(modelData.app_id)) ? Quickshell.iconPath(modelData.app_id) : Quickshell.iconPath("image-missing")
+                                                            source: Theme.resolveAppIcon(modelData.app_id, "", "image-missing")
                                                             implicitSize: 20
                                                             anchors.verticalCenter: parent.verticalCenter
                                                         }
