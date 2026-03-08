@@ -15,6 +15,7 @@ import src.monitors.system_monitor
 import src.monitors.power_profile_monitor
 import src.monitors.brightness_monitor
 import src.monitors.volume_monitor
+import src.monitors.audio_visualizer
 import src.monitors.swayidle_monitor
 import src.monitors.upower_monitor
 import src.monitors.niri_monitor

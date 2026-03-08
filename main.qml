@@ -63,6 +63,7 @@ ShellRoot {
                 "sinks": [],
                 "current_sink": 0
             },
+            "visualizer": new Array(24).fill(0),
             "swayidle": {
                 "active": true
             }
@@ -1797,6 +1798,28 @@ ShellRoot {
                                 "action": "set_volume",
                                 "value": value
                             })
+                        }
+
+                        Row {
+                            id: visualizerRow
+                            width: parent.width
+                            height: 30
+                            spacing: 2
+                            Repeater {
+                                model: root.sysStats.visualizer.length
+                                Item {
+                                    width: (visualizerRow.width - (visualizerRow.spacing * (root.sysStats.visualizer.length - 1))) / root.sysStats.visualizer.length
+                                    height: visualizerRow.height
+                                    Rectangle {
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width
+                                        height: Math.max(2, root.sysStats.visualizer[index] * parent.height)
+                                        color: Theme.accent
+                                        radius: 1
+                                        opacity: 0.7
+                                    }
+                                }
+                            }
                         }
 
                         MyCombo {

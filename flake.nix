@@ -33,9 +33,11 @@
                   ps.pygobject3
                   ps.pyudev
                   ps.pulsectl-asyncio
+                  ps.numpy
                 ]))
                 pkgs.gobject-introspection
                 pkgs.wtype
+                pkgs.pulseaudio
               ];
             };
           };
