@@ -114,6 +114,7 @@ async def audio_visualizer_monitor(writer):
         "--device=@DEFAULT_SINK@.monitor",
     ]
 
+    last_was_zero = False
     while True:
         proc = None
         try:
@@ -133,7 +134,10 @@ async def audio_visualizer_monitor(writer):
                 )
                 bars = processor.process(samples)
 
-                await write_json(writer, {"visualizer": bars})
+                is_zero = all(v == 0 for v in bars)
+                if not (is_zero and last_was_zero):
+                    await write_json(writer, {"visualizer": bars})
+                last_was_zero = is_zero
 
         except asyncio.CancelledError:
             if proc:
