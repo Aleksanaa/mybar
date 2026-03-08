@@ -5,6 +5,7 @@ import dbus
 import pyudev
 from pulsectl_asyncio import PulseAsync
 from .niri import NiriConnection
+from .monitors.notification_monitor import get_notification_service
 
 # Registry for action handlers
 ACTION_HANDLERS = {}
@@ -337,3 +338,40 @@ async def mpris_action(data, writer):
     action = data.get("action_type")
     if bus_name and action:
         await asyncio.to_thread(_mpris_action_blocking, bus_name, action)
+
+
+@action_handler("clear-notifications")
+async def clear_notifications(data, writer):
+    """Clears all notifications."""
+    service = get_notification_service()
+    if service:
+        await asyncio.to_thread(service.clear_all)
+
+
+@action_handler("toggle-dnd")
+async def toggle_dnd(data, writer):
+    """Toggles Do Not Disturb mode."""
+    service = get_notification_service()
+    if service:
+        await asyncio.to_thread(service.set_dnd, not service.dnd)
+
+
+@action_handler("close-notification")
+async def close_notification(data, writer):
+    """Closes a specific notification by its ID."""
+    notification_id = data.get("id")
+    service = get_notification_service()
+    if service and notification_id is not None:
+        await asyncio.to_thread(service.user_close_notification, int(notification_id))
+
+
+@action_handler("invoke-notification-action")
+async def invoke_notification_action(data, writer):
+    """Invokes a notification action."""
+    notification_id = data.get("id")
+    action_key = data.get("action_key")
+    service = get_notification_service()
+    if service and notification_id is not None and action_key:
+        await asyncio.to_thread(
+            service.ActionInvoked, int(notification_id), str(action_key)
+        )

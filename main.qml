@@ -67,6 +67,10 @@ ShellRoot {
             "mpris": null,
             "swayidle": {
                 "active": true
+            },
+            "notifications": {
+                "list": [],
+                "dnd": false
             }
         })
 
@@ -166,6 +170,12 @@ ShellRoot {
                             lastVolumeApprox = root.sysStats.volume.approx;
                         }
                     }
+
+                    if (jsonObject.notification_popup !== undefined) {
+                        if (panel.currentPopup !== notificationPanel) {
+                            notificationPopup.show(jsonObject.notification_popup);
+                        }
+                    }
                 } catch (e) {
                     console.log("JSON: ", e, "content: ", data);
                 }
@@ -181,18 +191,6 @@ ShellRoot {
         }
         function closeAll() {
             command = ["vicinae", "close"];
-            running = true;
-        }
-    }
-
-    Process {
-        id: swaync
-        function open() {
-            command = ["swaync-client", "--open-panel"];
-            running = true;
-        }
-        function closeAll() {
-            command = ["swaync-client", "--close-panel"];
             running = true;
         }
     }
@@ -1252,8 +1250,7 @@ ShellRoot {
 
                     TapHandler {
                         onTapped: {
-                            swaync.open();
-                            panel.currentPopup = swaync;
+                            panel.currentPopup = notificationPanel;
                         }
                     }
                 }
@@ -2091,6 +2088,16 @@ ShellRoot {
                 }
             }
         }
+    }
+
+    NotificationPopup {
+        id: notificationPopup
+    }
+
+    NotificationPanel {
+        id: notificationPanel
+        target: notificationCapsule
+        active: panel.currentPopup === notificationPanel
     }
 
     OSDPopup {
