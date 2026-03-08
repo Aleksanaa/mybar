@@ -176,9 +176,11 @@ async def notification_monitor(writer):
             notifications_list = [
                 n for n in notifications_list if n["id"] != event["id"]
             ]
+            await write_json(writer, {"close_notification_popup": event["id"]})
 
         elif event_type == "clear_all":
             notifications_list = []
+            await write_json(writer, {"clear_notification_popup": true})
 
         elif event_type == "dnd":
             dnd = event["value"]

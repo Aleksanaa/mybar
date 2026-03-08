@@ -11,6 +11,8 @@ Rectangle {
     property bool isPopup: false
     property bool showHeader: true
 
+    signal closed()
+
     width: parent ? parent.width : 350
     implicitHeight: layout.implicitHeight + 24
 
@@ -81,6 +83,7 @@ Rectangle {
                                 "action": "close-notification",
                                 "id": rootItem.notification.id
                             });
+                            rootItem.closed();
                         }
                     }
                 }
@@ -150,6 +153,7 @@ Rectangle {
                                 "id": rootItem.notification.id,
                                 "action_key": rootItem.notification.actions[index * 2]
                             });
+                            rootItem.closed();
                         }
                     }
                 }

@@ -176,6 +176,14 @@ ShellRoot {
                             notificationPopup.show(jsonObject.notification_popup);
                         }
                     }
+
+                    if (jsonObject.close_notification_popup !== undefined) {
+                        notificationPopup.hideIfIdMatches(jsonObject.close_notification_popup);
+                    }
+
+                    if (jsonObject.clear_notification_popup !== undefined) {
+                        notificationPopup.visible = false;
+                    }
                 } catch (e) {
                     console.log("JSON: ", e, "content: ", data);
                 }

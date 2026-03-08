@@ -74,7 +74,7 @@ ColumnLayout {
 
             IconImage {
                 anchors.centerIn: parent
-                source: Quickshell.iconPath("edit-clear-symbolic")
+                source: Quickshell.iconPath("edit-clear-all-symbolic")
                 implicitSize: 16
                 layer.enabled: true
                 layer.effect: ColorOverlay {

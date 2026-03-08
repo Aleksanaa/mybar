@@ -74,15 +74,15 @@ MyPopup {
                 width: 28
                 height: 28
                 radius: 14
-                color: root.sysStats.notifications.dnd ? Theme.accent : Theme.border
+                color: Theme.border
 
                 IconImage {
                     anchors.centerIn: parent
-                    source: Quickshell.iconPath("notifications-disabled-symbolic")
+                    source: Quickshell.iconPath(`notifications${root.sysStats.notifications.dnd ? "-disabled" : ""}-symbolic`)
                     implicitSize: 16
                     layer.enabled: true
                     layer.effect: ColorOverlay {
-                        color: root.sysStats.notifications.dnd ? Theme.bg : Theme.fg
+                        color: Theme.fg
                     }
                 }
 
@@ -92,8 +92,6 @@ MyPopup {
                     })
                 }
 
-                ToolTip.visible: dndHover.hovered
-                ToolTip.text: "Do Not Disturb"
                 HoverHandler {
                     id: dndHover
                 }
@@ -122,8 +120,6 @@ MyPopup {
                     })
                 }
 
-                ToolTip.visible: clearHover.hovered
-                ToolTip.text: "Clear All"
                 HoverHandler {
                     id: clearHover
                 }

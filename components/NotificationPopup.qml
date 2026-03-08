@@ -33,6 +33,9 @@ PanelWindow {
         notification: notificationPopup.currentNotification
         isPopup: true
         width: 336
+        onClosed: {
+            notificationPopup.visible = false;
+        }
     }
 
     Timer {
@@ -45,5 +48,11 @@ PanelWindow {
         currentNotification = notification;
         notificationPopup.visible = true;
         hideTimer.restart();
+    }
+
+    function hideIfIdMatches(id) {
+        if (currentNotification && currentNotification.id === id) {
+            notificationPopup.visible = false;
+        }
     }
 }
