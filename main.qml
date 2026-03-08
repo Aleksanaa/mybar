@@ -64,6 +64,7 @@ ShellRoot {
                 "current_sink": 0
             },
             "visualizer": new Array(24).fill(0),
+            "mpris": null,
             "swayidle": {
                 "active": true
             }
@@ -76,9 +77,9 @@ ShellRoot {
                     delete t[key];
                     continue;
                 }
-                // if target is missing this key, create an empty object first to prevent recursive crashes
+                // if target is missing this key or is null, create an empty object first
                 if (typeof s[key] === 'object' && !Array.isArray(s[key])) {
-                    if (t[key] === undefined || typeof t[key] !== 'object') {
+                    if (t[key] === undefined || t[key] === null || typeof t[key] !== 'object') {
                         t[key] = {};
                     }
                     update(t[key], s[key]);
@@ -1800,23 +1801,157 @@ ShellRoot {
                             })
                         }
 
-                        Row {
-                            id: visualizerRow
+                        // Combined MPRIS and Visualizer
+                        Item {
                             width: parent.width
-                            height: 30
-                            spacing: 2
-                            Repeater {
-                                model: root.sysStats.visualizer.length
-                                Item {
-                                    width: (visualizerRow.width - (visualizerRow.spacing * (root.sysStats.visualizer.length - 1))) / root.sysStats.visualizer.length
-                                    height: visualizerRow.height
+                            height: mprisColumn.implicitHeight
+                            visible: root.sysStats.mpris !== null
+
+                            // Visualizer Background
+                            Row {
+                                id: visualizerRow
+                                anchors.fill: parent
+                                spacing: 2
+                                opacity: 0.3 // Subtle transparency
+                                visible: {
+                                    if (!root.sysStats.visualizer)
+                                        return false;
+                                    for (var i = 0; i < root.sysStats.visualizer.length; i++) {
+                                        if (root.sysStats.visualizer[i] > 0.001)
+                                            return true;
+                                    }
+                                    return false;
+                                }
+                                Repeater {
+                                    model: root.sysStats.visualizer.length
+                                    Item {
+                                        width: (visualizerRow.width - (visualizerRow.spacing * (root.sysStats.visualizer.length - 1))) / root.sysStats.visualizer.length
+                                        height: visualizerRow.height
+                                        Rectangle {
+                                            anchors.bottom: parent.bottom
+                                            width: parent.width
+                                            height: Math.max(2, root.sysStats.visualizer[index] * parent.height)
+                                            color: Theme.accent
+                                            radius: 1
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Foreground Media Info
+                            Column {
+                                id: mprisColumn
+                                width: parent.width
+                                spacing: 8
+
+                                Row {
+                                    width: parent.width
+                                    spacing: 10
                                     Rectangle {
-                                        anchors.bottom: parent.bottom
-                                        width: parent.width
-                                        height: Math.max(2, root.sysStats.visualizer[index] * parent.height)
-                                        color: Theme.accent
-                                        radius: 1
-                                        opacity: 0.7
+                                        width: 48
+                                        height: 48
+                                        radius: 4
+                                        color: Theme.capsule
+                                        clip: true
+                                        Image {
+                                            anchors.fill: parent
+                                            source: root.sysStats.mpris ? root.sysStats.mpris.art_url : ""
+                                            fillMode: Image.PreserveAspectCrop
+                                            visible: status === Image.Ready
+                                        }
+                                        IconImage {
+                                            anchors.centerIn: parent
+                                            source: Quickshell.iconPath("audio-x-generic-symbolic")
+                                            visible: parent.children[0].status !== Image.Ready
+                                            implicitSize: 24
+                                            layer.enabled: true
+                                            layer.effect: ColorOverlay {
+                                                color: Theme.fg
+                                            }
+                                        }
+                                    }
+
+                                    Column {
+                                        width: parent.width - 58
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            width: parent.width
+                                            text: (root.sysStats.mpris && root.sysStats.mpris.title) ? root.sysStats.mpris.title : "Not Playing"
+                                            color: Theme.fg
+                                            font.bold: true
+                                            elide: Text.ElideRight
+                                            style: Text.Outline
+                                            styleColor: Theme.bg // Added outline for readability over visualizer
+                                        }
+                                        Text {
+                                            width: parent.width
+                                            text: (root.sysStats.mpris && root.sysStats.mpris.artist) ? root.sysStats.mpris.artist : "Let's play some music"
+                                            color: Theme.fg
+                                            opacity: 0.9 // Slightly higher opacity for readability
+                                            elide: Text.ElideRight
+                                            font.pixelSize: 12
+                                            style: Text.Outline
+                                            styleColor: Theme.bg
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    spacing: 20
+
+                                    IconImage {
+                                        source: Quickshell.iconPath("media-skip-backward-symbolic")
+                                        implicitSize: 20
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.fg
+                                        }
+                                        TapHandler {
+                                            onTapped: if (root.sysStats.mpris) {
+                                                writeOutput({
+                                                    "action": "mpris_action",
+                                                    "bus_name": root.sysStats.mpris.bus_name,
+                                                    "action_type": "previous"
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    IconImage {
+                                        source: Quickshell.iconPath(root.sysStats.mpris && root.sysStats.mpris.status === "Playing" ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
+                                        implicitSize: 24
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.accent
+                                        }
+                                        TapHandler {
+                                            onTapped: if (root.sysStats.mpris) {
+                                                writeOutput({
+                                                    "action": "mpris_action",
+                                                    "bus_name": root.sysStats.mpris.bus_name,
+                                                    "action_type": "play_pause"
+                                                });
+                                            }
+                                        }
+                                    }
+
+                                    IconImage {
+                                        source: Quickshell.iconPath("media-skip-forward-symbolic")
+                                        implicitSize: 20
+                                        layer.enabled: true
+                                        layer.effect: ColorOverlay {
+                                            color: Theme.fg
+                                        }
+                                        TapHandler {
+                                            onTapped: if (root.sysStats.mpris) {
+                                                writeOutput({
+                                                    "action": "mpris_action",
+                                                    "bus_name": root.sysStats.mpris.bus_name,
+                                                    "action_type": "next"
+                                                });
+                                            }
+                                        }
                                     }
                                 }
                             }

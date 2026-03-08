@@ -16,6 +16,7 @@ import src.monitors.power_profile_monitor
 import src.monitors.brightness_monitor
 import src.monitors.volume_monitor
 import src.monitors.audio_visualizer
+import src.monitors.mpris_monitor
 import src.monitors.swayidle_monitor
 import src.monitors.upower_monitor
 import src.monitors.niri_monitor
@@ -25,6 +26,7 @@ from src.monitors.swayidle_monitor import swayidle_dbus_worker
 from src.monitors.brightness_monitor import brightness_thread_worker
 from src.monitors.volume_monitor import volume_thread_worker
 from src.monitors.upower_monitor import upower_dbus_worker
+from src.monitors.mpris_monitor import mpris_thread_worker
 
 
 async def read_stdin(reader, writer):
@@ -84,6 +86,12 @@ async def main():
         target=volume_thread_worker, args=(loop,), daemon=True
     )
     volume_thread.start()
+
+    # Start the MPRIS worker thread
+    mpris_thread = threading.Thread(
+        target=mpris_thread_worker, args=(loop,), daemon=True
+    )
+    mpris_thread.start()
 
     # Create stream reader and writer for stdin/stdout
     reader = asyncio.StreamReader()

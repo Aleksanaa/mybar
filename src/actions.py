@@ -309,3 +309,31 @@ async def toggle_super(data, writer):
             _niri_listener_task = asyncio.create_task(_niri_window_focus_listener())
         except Exception as e:
             print(f"Error starting wtype: {e}", file=sys.stderr)
+
+
+def _mpris_action_blocking(bus_name, action):
+    """Blocking function to perform MPRIS actions."""
+    try:
+        bus = dbus.SessionBus()
+        proxy = bus.get_object(bus_name, "/org/mpris/MediaPlayer2")
+        player = dbus.Interface(proxy, "org.mpris.MediaPlayer2.Player")
+        if action == "play_pause":
+            player.PlayPause()
+        elif action == "next":
+            player.Next()
+        elif action == "previous":
+            player.Previous()
+    except Exception as e:
+        print(
+            f"Error performing MPRIS action {action} on {bus_name}: {e}",
+            file=sys.stderr,
+        )
+
+
+@action_handler("mpris_action")
+async def mpris_action(data, writer):
+    """Handles MPRIS player actions."""
+    bus_name = data.get("bus_name")
+    action = data.get("action_type")
+    if bus_name and action:
+        await asyncio.to_thread(_mpris_action_blocking, bus_name, action)
