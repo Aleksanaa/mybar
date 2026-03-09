@@ -152,6 +152,7 @@ async def system_monitor(writer):
 
     # --- Baseline CPU ---
     last_cpu_times = get_cpu_times()
+    last_response = None
 
     while True:
         await asyncio.sleep(1)
@@ -161,7 +162,8 @@ async def system_monitor(writer):
         if last_cpu_times and current_cpu_times:
             percents = calculate_cpu_percent(last_cpu_times, current_cpu_times)
             cpu_total = percents[0]
-            cpus = [round(p, 2) for p in percents[1:]]
+            # OPTIMIZATION: Round to 1 decimal place (0.1%) to reduce noise
+            cpus = [round(p, 1) for p in percents[1:]]
             last_cpu_times = current_cpu_times
         else:
             cpu_total, cpus = 0.0, []
@@ -183,7 +185,7 @@ async def system_monitor(writer):
                         continue
                 if freqs:
                     freq_data["current"] = round(
-                        (sum(freqs) / len(freqs)) / 1000000.0, 2
+                        (sum(freqs) / len(freqs)) / 1000000.0, 1
                     )
             else:
                 raise Exception("No paths")
@@ -191,15 +193,15 @@ async def system_monitor(writer):
             cpu_freq = psutil.cpu_freq()
             if cpu_freq:
                 freq_data = {
-                    "current": round(cpu_freq.current / 1000.0, 2),
-                    "max": round((cpu_freq.max or cpu_freq.current) / 1000.0, 2),
+                    "current": round(cpu_freq.current / 1000.0, 1),
+                    "max": round((cpu_freq.max or cpu_freq.current) / 1000.0, 1),
                 }
 
         response = {
-            "cpu": round(cpu_total, 2),
+            "cpu": round(cpu_total, 1),
             "cpus": cpus,
-            "mem": mem_used,
-            "swap": swap_used,
+            "mem": round(mem_used, 2),
+            "swap": round(swap_used, 2),
             "cpu_freq": freq_data,
             "temp": 0.0,
             "temp_c": 0,
@@ -216,4 +218,6 @@ async def system_monitor(writer):
             except Exception:
                 pass
 
-        await write_json(writer, response)
+        if response != last_response:
+            await write_json(writer, response)
+            last_response = response

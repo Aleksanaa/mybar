@@ -42,6 +42,7 @@ async def net_usage_monitor(writer):
     """Monitors and reports network usage once per second."""
     last_net_io = psutil.net_io_counters()
     last_time = time.monotonic()
+    last_response = None
 
     while True:
         await asyncio.sleep(1)
@@ -70,10 +71,13 @@ async def net_usage_monitor(writer):
             "net": {
                 "up": up_val,
                 "up_unit": up_unit,
-                "up_raw": upload_speed,
+                "up_raw": round(upload_speed, 1),
                 "down": down_val,
                 "down_unit": down_unit,
-                "down_raw": download_speed,
+                "down_raw": round(download_speed, 1),
             }
         }
-        await write_json(writer, response)
+
+        if response != last_response:
+            await write_json(writer, response)
+            last_response = response

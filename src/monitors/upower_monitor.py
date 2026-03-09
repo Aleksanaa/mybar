@@ -166,9 +166,9 @@ class BatteryStateParser:
                 "time_to_empty": time_to_empty,
                 "time_to_full": time_to_full,
                 "state": state,
-                "energy_rate": round(energy_rate, 2),
+                "energy_rate": round(energy_rate, 1),
                 "energy": round(energy, 2),
-                "voltage": round(voltage, 2),
+                "voltage": round(voltage, 1),
                 "capacity": round(capacity, 2),
             }
         except Exception as e:
@@ -183,8 +183,20 @@ class BatteryHistoryManager:
         self.history = read_history()
         self.last_hour = -1
         self.current_percentage = -1.0
+        self.last_sent_bat = None
 
-    def update(self, current_percentage):
+    def update(self, state_dict):
+        # Round values for comparison to reduce noise
+        # Note: state_dict already contains some rounded values from parser.parse
+        if state_dict == self.last_sent_bat:
+            return
+
+        asyncio.run_coroutine_threadsafe(
+            write_json(self.writer, {"bat": state_dict}), self.loop
+        )
+        self.last_sent_bat = state_dict
+
+        current_percentage = float(state_dict["value"])
         self.current_percentage = current_percentage
         now = datetime.now()
         if now.hour != self.last_hour:
@@ -212,8 +224,7 @@ def upower_dbus_worker(loop, writer):
     history_manager = BatteryHistoryManager(loop, writer)
 
     def send_update(state_dict):
-        asyncio.run_coroutine_threadsafe(write_json(writer, {"bat": state_dict}), loop)
-        history_manager.update(float(state_dict["value"]))
+        history_manager.update(state_dict)
 
     def properties_changed_handler(
         interface, changed_properties, invalidated_properties
