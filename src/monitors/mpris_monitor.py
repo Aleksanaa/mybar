@@ -9,17 +9,12 @@ from .audio_visualizer import PLAYBACK_EVENT
 MPRIS_QUEUE = asyncio.Queue()
 
 
-def get_mpris_metadata(proxy):
+def parse_mpris_metadata(metadata, status):
     try:
-        props = dbus.Interface(proxy, "org.freedesktop.DBus.Properties")
-        metadata = props.Get("org.mpris.MediaPlayer2.Player", "Metadata")
-        status = props.Get("org.mpris.MediaPlayer2.Player", "PlaybackStatus")
-
         title = str(metadata.get("xesam:title", "Unknown"))
         artist = ", ".join([str(a) for a in metadata.get("xesam:artist", ["Unknown"])])
         album = str(metadata.get("xesam:album", ""))
         art_url = str(metadata.get("mpris:artUrl", ""))
-
         return {
             "title": title,
             "artist": artist,
@@ -27,7 +22,7 @@ def get_mpris_metadata(proxy):
             "art_url": art_url,
             "status": str(status),
         }
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -35,35 +30,90 @@ def mpris_worker(loop):
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
 
+    players_state = {}
+    player_proxies = {}
+
+    def fetch_player_data(bus_name):
+        try:
+            if bus_name not in player_proxies:
+                proxy = bus.get_object(bus_name, "/org/mpris/MediaPlayer2")
+                props = dbus.Interface(proxy, "org.freedesktop.DBus.Properties")
+                player_proxies[bus_name] = props
+            else:
+                props = player_proxies[bus_name]
+
+            metadata = props.Get("org.mpris.MediaPlayer2.Player", "Metadata")
+            status = props.Get("org.mpris.MediaPlayer2.Player", "PlaybackStatus")
+            return parse_mpris_metadata(metadata, status)
+        except Exception:
+            player_proxies.pop(bus_name, None)
+            return None
+
     def on_properties_changed(
         interface, changed_properties, invalidated_properties, path=None, bus_name=None
     ):
         if interface == "org.mpris.MediaPlayer2.Player":
-            # We don't have the proxy here easily, so we just signal a refresh is needed or send the changed props
-            # Simplest: find the player again and get all data
-            update_all_players()
+            updated = False
+            state = players_state.get(bus_name)
+
+            if state:
+                if "PlaybackStatus" in changed_properties:
+                    state["status"] = str(changed_properties["PlaybackStatus"])
+                    updated = True
+                if "Metadata" in changed_properties:
+                    new_meta = parse_mpris_metadata(
+                        changed_properties["Metadata"], state["status"]
+                    )
+                    if new_meta:
+                        state.update(new_meta)
+                        updated = True
+            else:
+                # New or previously unknown unique sender, fetch full state
+                data = fetch_player_data(bus_name)
+                if data:
+                    players_state[bus_name] = data
+                    updated = True
+
+            if updated:
+                loop.call_soon_threadsafe(
+                    MPRIS_QUEUE.put_nowait, {"players": dict(players_state)}
+                )
 
     def update_all_players():
-        players = [
+        well_known_names = [
             name
             for name in bus.list_names()
             if name.startswith("org.mpris.MediaPlayer2.")
         ]
-        if not players:
+        if not well_known_names:
+            players_state.clear()
+            player_proxies.clear()
             loop.call_soon_threadsafe(MPRIS_QUEUE.put_nowait, {"players": {}})
             return
 
-        all_players_data = {}
-        for player in players:
+        current_unique_players = {}
+        for wk_name in well_known_names:
             try:
-                proxy = bus.get_object(player, "/org/mpris/MediaPlayer2")
-                data = get_mpris_metadata(proxy)
+                # Resolve well-known name to unique name for consistent tracking
+                unique_name = bus.get_name_owner(wk_name)
+                data = fetch_player_data(unique_name)
                 if data:
-                    all_players_data[player] = data
-            except:
+                    current_unique_players[unique_name] = data
+            except Exception:
                 continue
 
-        loop.call_soon_threadsafe(MPRIS_QUEUE.put_nowait, {"players": all_players_data})
+        players_state.clear()
+        players_state.update(current_unique_players)
+
+        # Cleanup stale proxies
+        active_uniques = set(current_unique_players.keys())
+        stale_proxies = set(player_proxies.keys()) - active_uniques
+        for s in stale_proxies:
+            player_proxies.pop(s, None)
+
+        loop.call_soon_threadsafe(
+            MPRIS_QUEUE.put_nowait, {"players": dict(players_state)}
+        )
 
     bus.add_signal_receiver(
         on_properties_changed,
@@ -76,6 +126,7 @@ def mpris_worker(loop):
     # Also watch for new/removed players
     def on_name_owner_changed(name, old_owner, new_owner):
         if name.startswith("org.mpris.MediaPlayer2."):
+            # Re-sync when a player appears or disappears
             update_all_players()
 
     bus.add_signal_receiver(
@@ -85,8 +136,6 @@ def mpris_worker(loop):
     )
 
     update_all_players()
-    # No need for a loop here as signals are handled by the main loop of the thread if it had one,
-    # but dbus-python with DBusGMainLoop needs a GLib main loop.
     import gi
     from gi.repository import GLib
 

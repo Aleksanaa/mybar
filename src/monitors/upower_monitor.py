@@ -103,9 +103,8 @@ def upower_dbus_worker(loop):
     UPOWER_INTERFACE = "org.freedesktop.UPower"
     UPOWER_PATH = "/org/freedesktop/UPower"
 
-    def get_battery_path():
+    def get_battery_path(bus):
         try:
-            bus = dbus.SystemBus()
             proxy = bus.get_object(SERVICE, UPOWER_PATH)
             upower = dbus.Interface(proxy, UPOWER_INTERFACE)
             devices = upower.EnumerateDevices()
@@ -116,23 +115,50 @@ def upower_dbus_worker(loop):
         except Exception:
             return "/org/freedesktop/UPower/devices/DisplayDevice"
 
-    OBJECT_PATH = get_battery_path()
+    # Cache state to update incrementally from signals
+    current_state = {}
 
-    def get_battery_state(props_interface, device_proxy):
+    def parse_battery_state(properties):
+        # ... (implementation remains the same)
         try:
-            percentage = float(props_interface.Get(DEVICE_INTERFACE, "Percentage"))
-            state = int(props_interface.Get(DEVICE_INTERFACE, "State"))
-            time_to_empty = int(props_interface.Get(DEVICE_INTERFACE, "TimeToEmpty"))
-            time_to_full = int(props_interface.Get(DEVICE_INTERFACE, "TimeToFull"))
-            energy_rate = float(props_interface.Get(DEVICE_INTERFACE, "EnergyRate"))
-            energy = float(props_interface.Get(DEVICE_INTERFACE, "Energy"))
-            voltage = float(props_interface.Get(DEVICE_INTERFACE, "Voltage"))
-            capacity = float(props_interface.Get(DEVICE_INTERFACE, "Capacity"))
+            percentage = float(
+                properties.get("Percentage", current_state.get("percentage", 0))
+            )
+            state = int(properties.get("State", current_state.get("state", 0)))
+            time_to_empty = int(
+                properties.get("TimeToEmpty", current_state.get("time_to_empty", 0))
+            )
+            time_to_full = int(
+                properties.get("TimeToFull", current_state.get("time_to_full", 0))
+            )
+            energy_rate = float(
+                properties.get("EnergyRate", current_state.get("energy_rate", 0))
+            )
+            energy = float(properties.get("Energy", current_state.get("energy", 0)))
+            voltage = float(properties.get("Voltage", current_state.get("voltage", 0)))
+            capacity = float(
+                properties.get("Capacity", current_state.get("capacity", 0))
+            )
+
             charging = state == 1
             bat_value = str(int(percentage))
             bat_approx = f"{(int(percentage) // 10) * 10:03d}"
             if state == 4:
                 bat_approx = "100"
+
+            # Keep raw values for future incremental updates
+            current_state.update(
+                {
+                    "percentage": percentage,
+                    "state": state,
+                    "time_to_empty": time_to_empty,
+                    "time_to_full": time_to_full,
+                    "energy_rate": energy_rate,
+                    "energy": energy,
+                    "voltage": voltage,
+                    "capacity": capacity,
+                }
+            )
 
             return {
                 "value": bat_value,
@@ -147,30 +173,39 @@ def upower_dbus_worker(loop):
                 "capacity": round(capacity, 2),
             }
         except Exception as e:
-            print(f"Error reading battery properties: {e}", file=sys.stderr)
+            print(f"Error parsing battery properties: {e}", file=sys.stderr)
             return None
 
     def properties_changed_handler(
         interface, changed_properties, invalidated_properties
     ):
-        relevant_props = {"Percentage", "State", "TimeToEmpty", "TimeToFull"}
+        relevant_props = {
+            "Percentage",
+            "State",
+            "TimeToEmpty",
+            "TimeToFull",
+            "EnergyRate",
+            "Energy",
+            "Voltage",
+            "Capacity",
+        }
         if any(prop in changed_properties for prop in relevant_props):
-            try:
-                bus = dbus.SystemBus()
-                proxy = bus.get_object(SERVICE, OBJECT_PATH)
-                props_interface = dbus.Interface(proxy, INTERFACE)
-                state_dict = get_battery_state(props_interface, proxy)
-                if state_dict:
-                    loop.call_soon_threadsafe(UPOWER_QUEUE.put_nowait, state_dict)
-            except Exception as e:
-                print(f"Error handling UPower change: {e}", file=sys.stderr)
+            state_dict = parse_battery_state(changed_properties)
+            if state_dict:
+                loop.call_soon_threadsafe(UPOWER_QUEUE.put_nowait, state_dict)
 
     try:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus = dbus.SystemBus()
+        OBJECT_PATH = get_battery_path(bus)
+
         proxy = bus.get_object(SERVICE, OBJECT_PATH)
         props_interface = dbus.Interface(proxy, INTERFACE)
-        initial_state = get_battery_state(props_interface, proxy)
+
+        # Initial sync fetch of all properties
+        all_props = props_interface.GetAll(DEVICE_INTERFACE)
+        initial_state = parse_battery_state(all_props)
+
         if initial_state:
             loop.call_soon_threadsafe(UPOWER_QUEUE.put_nowait, initial_state)
 
@@ -189,8 +224,9 @@ def upower_dbus_worker(loop):
 @long_running_task
 async def upower_monitor(writer):
     """Monitors for UPower changes and manages 24h battery history."""
-    last_hour = datetime.now().hour
+    last_hour = -1
     current_percentage = -1.0
+    history = read_history()
 
     while True:
         try:
@@ -199,30 +235,25 @@ async def upower_monitor(writer):
                 bat_state = await asyncio.wait_for(UPOWER_QUEUE.get(), timeout=30)
                 current_percentage = float(bat_state["value"])
                 await write_json(writer, {"bat": bat_state})
-
-                # Push history update immediately when we have a valid percentage
-                history = read_history()
-                history_list = get_24h_history_list(history, current_percentage)
-                await write_json(writer, {"bat_history": history_list})
-
                 UPOWER_QUEUE.task_done()
             except asyncio.TimeoutError:
-                # If we haven't even got the first update yet, skip history push
                 if current_percentage < 0:
                     continue
 
-            # Check for hour roll-over
+            # Check for hour roll-over or initial load
             now = datetime.now()
             if now.hour != last_hour:
-                history = read_history()
-                cutoff = time.time() - 26 * 3600
-                history = [h for h in history if h[0] >= cutoff]
+                if last_hour != -1:
+                    # Record percentage for the new hour
+                    cutoff = time.time() - 26 * 3600
+                    history = [h for h in history if h[0] >= cutoff]
+                    timestamp = now.replace(
+                        minute=0, second=0, microsecond=0
+                    ).timestamp()
+                    history.append((timestamp, current_percentage))
+                    write_history(history)
 
-                # Record percentage for the new hour
-                timestamp = now.replace(minute=0, second=0, microsecond=0).timestamp()
-                history.append((timestamp, current_percentage))
-                write_history(history)
-
+                # Always update the UI with the latest list on hour change or startup
                 history_list = get_24h_history_list(history, current_percentage)
                 await write_json(writer, {"bat_history": history_list})
                 last_hour = now.hour
