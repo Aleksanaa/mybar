@@ -13,8 +13,14 @@ class NiriConnection:
             cls._instance.socket_path = os.environ.get("NIRI_SOCKET")
             cls._instance.reader = None
             cls._instance.writer = None
-            cls._instance.lock = asyncio.Lock()
+            cls._instance._lock = None
         return cls._instance
+
+    @property
+    def lock(self):
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     async def _connect(self):
         if not self.socket_path:
@@ -119,3 +125,7 @@ class NiriConnection:
 
             # Wait a bit before trying to reconnect if the connection dropped
             await asyncio.sleep(1)
+
+
+# Shared connection instance
+niri_conn = NiriConnection()

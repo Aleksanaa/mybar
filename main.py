@@ -10,17 +10,10 @@ from src.tasks import LONG_RUNNING_TASKS
 from src.utils import write_json
 
 # Import monitors to register tasks
-import src.monitors.net_monitor
-import src.monitors.system_monitor
-import src.monitors.power_profile_monitor
-import src.monitors.brightness_monitor
-import src.monitors.volume_monitor
-import src.monitors.audio_visualizer
-import src.monitors.mpris_monitor
-import src.monitors.swayidle_monitor
-import src.monitors.upower_monitor
-import src.monitors.niri_monitor
-import src.monitors.notification_monitor
+import src.monitors.net_monitor  # noqa: F401
+import src.monitors.system_monitor  # noqa: F401
+import src.monitors.audio_visualizer  # noqa: F401
+import src.monitors.niri_monitor  # noqa: F401
 
 from src.monitors.power_profile_monitor import power_profiles_dbus_worker
 from src.monitors.swayidle_monitor import swayidle_dbus_worker
@@ -59,48 +52,6 @@ async def main():
     """Main function to set up streams and run tasks."""
     loop = asyncio.get_running_loop()
 
-    # Start the power profiles D-Bus worker thread
-    power_profiles_dbus_thread = threading.Thread(
-        target=power_profiles_dbus_worker, args=(loop,), daemon=True
-    )
-    power_profiles_dbus_thread.start()
-
-    # Start the swayidle D-Bus worker thread
-    swayidle_dbus_thread = threading.Thread(
-        target=swayidle_dbus_worker, args=(loop,), daemon=True
-    )
-    swayidle_dbus_thread.start()
-
-    # Start the upower D-Bus worker thread
-    upower_dbus_thread = threading.Thread(
-        target=upower_dbus_worker, args=(loop,), daemon=True
-    )
-    upower_dbus_thread.start()
-
-    # Start the Brightness worker thread
-    brightness_thread = threading.Thread(
-        target=brightness_thread_worker, args=(loop,), daemon=True
-    )
-    brightness_thread.start()
-
-    # Start the Volume worker thread
-    volume_thread = threading.Thread(
-        target=volume_thread_worker, args=(loop,), daemon=True
-    )
-    volume_thread.start()
-
-    # Start the MPRIS worker thread
-    mpris_thread = threading.Thread(
-        target=mpris_thread_worker, args=(loop,), daemon=True
-    )
-    mpris_thread.start()
-
-    # Start the notification thread
-    notification_thread = threading.Thread(
-        target=notification_thread_worker, args=(loop,), daemon=True
-    )
-    notification_thread.start()
-
     # Create stream reader and writer for stdin/stdout
     reader = asyncio.StreamReader()
     await loop.connect_read_pipe(
@@ -111,6 +62,20 @@ async def main():
         asyncio.streams.FlowControlMixin, sys.stdout
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
+
+    # Worker threads to start
+    workers = [
+        power_profiles_dbus_worker,
+        swayidle_dbus_worker,
+        upower_dbus_worker,
+        brightness_thread_worker,
+        volume_thread_worker,
+        mpris_thread_worker,
+        notification_thread_worker,
+    ]
+
+    for worker in workers:
+        threading.Thread(target=worker, args=(loop, writer), daemon=True).start()
 
     # Start long-running tasks from the registry
     background_tasks = [

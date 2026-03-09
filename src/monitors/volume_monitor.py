@@ -2,12 +2,9 @@ import asyncio
 import sys
 from pulsectl_asyncio import PulseAsync
 from ..utils import write_json
-from ..tasks import long_running_task
-
-VOLUME_QUEUE = asyncio.Queue()
 
 
-async def volume_worker(loop):
+async def volume_worker(loop, writer):
     """Worker function to run the pulsectl-asyncio monitor."""
     try:
         async with PulseAsync("volume-monitor") as pulse:
@@ -29,56 +26,34 @@ async def volume_worker(loop):
                         muted = sink.mute
                         current_sink_index = i
 
+                approx = "medium"
+                if muted:
+                    approx = "muted"
+                elif volume > 0.66:
+                    approx = "high"
+                elif volume < 0.33:
+                    approx = "low"
+
                 return {
-                    "volume": volume,
-                    "muted": muted,
-                    "sinks": sink_list,
-                    "current_sink": current_sink_index,
+                    "volume": {
+                        "value": round(volume, 2),
+                        "approx": approx,
+                        "sinks": sink_list,
+                        "current_sink": current_sink_index,
+                    }
                 }
 
             # Get initial state
             initial_state = await get_state()
-            loop.call_soon_threadsafe(VOLUME_QUEUE.put_nowait, initial_state)
+            asyncio.run_coroutine_threadsafe(write_json(writer, initial_state), loop)
 
             async for event in pulse.subscribe_events("sink", "server"):
                 if event.t in ["change", "new", "remove"]:
                     state = await get_state()
-                    loop.call_soon_threadsafe(VOLUME_QUEUE.put_nowait, state)
+                    asyncio.run_coroutine_threadsafe(write_json(writer, state), loop)
     except Exception as e:
         print(f"Error in volume thread: {e}", file=sys.stderr)
 
 
-def volume_thread_worker(loop):
-    asyncio.run(volume_worker(loop))
-
-
-@long_running_task
-async def volume_monitor(writer):
-    """Monitors for volume changes by listening to the VOLUME_QUEUE."""
-    while True:
-        data = await VOLUME_QUEUE.get()
-        volume = data["volume"]
-        muted = data["muted"]
-        sinks = data["sinks"]
-        current_sink = data["current_sink"]
-
-        approx = "medium"
-        if muted:
-            approx = "muted"
-        elif volume > 0.66:
-            approx = "high"
-        elif volume < 0.33:
-            approx = "low"
-
-        await write_json(
-            writer,
-            {
-                "volume": {
-                    "value": round(volume, 2),
-                    "approx": approx,
-                    "sinks": sinks,
-                    "current_sink": current_sink,
-                }
-            },
-        )
-        VOLUME_QUEUE.task_done()
+def volume_thread_worker(loop, writer):
+    asyncio.run(volume_worker(loop, writer))

@@ -1,5 +1,4 @@
 import asyncio
-import sys
 import os
 import psutil
 from ..utils import write_json
@@ -104,7 +103,7 @@ async def system_monitor(writer):
                 "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq", "r"
             ) as f:
                 max_freq = round(int(f.read().strip()) / 1000000.0, 2)
-    except:
+    except Exception:
         pass
 
     # --- Temperature Sensor Discovery ---
@@ -146,9 +145,9 @@ async def system_monitor(writer):
                             )
                             if os.path.exists(thermal_file):
                                 break
-                except:
+                except Exception:
                     continue
-        except:
+        except Exception:
             thermal_file = None
 
     # --- Baseline CPU ---
@@ -180,7 +179,7 @@ async def system_monitor(writer):
                     try:
                         with open(path, "r") as f:
                             freqs.append(int(f.read().strip()))
-                    except:
+                    except Exception:
                         continue
                 if freqs:
                     freq_data["current"] = round(
@@ -188,7 +187,7 @@ async def system_monitor(writer):
                     )
             else:
                 raise Exception("No paths")
-        except:
+        except Exception:
             cpu_freq = psutil.cpu_freq()
             if cpu_freq:
                 freq_data = {
@@ -214,7 +213,7 @@ async def system_monitor(writer):
                     response["temp_c"] = int(current_temp)
                     norm = (current_temp - temp_min) / (temp_max - temp_min)
                     response["temp"] = round(max(0.0, min(1.0, norm)), 2)
-            except:
+            except Exception:
                 pass
 
         await write_json(writer, response)

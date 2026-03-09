@@ -3,10 +3,7 @@ import sys
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from ..utils import write_json
-from ..tasks import long_running_task
 from .audio_visualizer import PLAYBACK_EVENT
-
-MPRIS_QUEUE = asyncio.Queue()
 
 
 def parse_mpris_metadata(metadata, status):
@@ -26,12 +23,41 @@ def parse_mpris_metadata(metadata, status):
         return None
 
 
-def mpris_worker(loop):
+def mpris_worker(loop, writer):
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
 
     players_state = {}
     player_proxies = {}
+
+    def get_active_player():
+        active_player = None
+        if players_state:
+            # Prefer playing ones
+            for name, p in players_state.items():
+                if p["status"] == "Playing":
+                    active_player = p.copy()
+                    active_player["bus_name"] = name
+                    break
+            if not active_player:
+                # Just take the first one
+                name = list(players_state.keys())[0]
+                active_player = players_state[name].copy()
+                active_player["bus_name"] = name
+        return active_player
+
+    def send_update():
+        active_player = get_active_player()
+
+        # Signal the audio visualizer to start/stop
+        if active_player and active_player.get("status") == "Playing":
+            loop.call_soon_threadsafe(PLAYBACK_EVENT.set)
+        else:
+            loop.call_soon_threadsafe(PLAYBACK_EVENT.clear)
+
+        asyncio.run_coroutine_threadsafe(
+            write_json(writer, {"mpris": active_player}), loop
+        )
 
     def fetch_player_data(bus_name):
         try:
@@ -75,9 +101,7 @@ def mpris_worker(loop):
                     updated = True
 
             if updated:
-                loop.call_soon_threadsafe(
-                    MPRIS_QUEUE.put_nowait, {"players": dict(players_state)}
-                )
+                send_update()
 
     def update_all_players():
         well_known_names = [
@@ -88,7 +112,7 @@ def mpris_worker(loop):
         if not well_known_names:
             players_state.clear()
             player_proxies.clear()
-            loop.call_soon_threadsafe(MPRIS_QUEUE.put_nowait, {"players": {}})
+            send_update()
             return
 
         current_unique_players = {}
@@ -111,9 +135,7 @@ def mpris_worker(loop):
         for s in stale_proxies:
             player_proxies.pop(s, None)
 
-        loop.call_soon_threadsafe(
-            MPRIS_QUEUE.put_nowait, {"players": dict(players_state)}
-        )
+        send_update()
 
     bus.add_signal_receiver(
         on_properties_changed,
@@ -136,45 +158,14 @@ def mpris_worker(loop):
     )
 
     update_all_players()
-    import gi
     from gi.repository import GLib
 
     ml = GLib.MainLoop()
     ml.run()
 
 
-def mpris_thread_worker(loop):
+def mpris_thread_worker(loop, writer):
     try:
-        mpris_worker(loop)
+        mpris_worker(loop, writer)
     except Exception as e:
         print(f"Error in MPRIS thread: {e}", file=sys.stderr)
-
-
-@long_running_task
-async def mpris_monitor(writer):
-    while True:
-        data = await MPRIS_QUEUE.get()
-        # For simplicity, just send the first active player found
-        players = data.get("players", {})
-        active_player = None
-        if players:
-            # Prefer playing ones
-            for name, p in players.items():
-                if p["status"] == "Playing":
-                    active_player = p
-                    active_player["bus_name"] = name
-                    break
-            if not active_player:
-                # Just take the first one
-                name = list(players.keys())[0]
-                active_player = players[name]
-                active_player["bus_name"] = name
-
-        # Signal the audio visualizer to start/stop
-        if active_player and active_player.get("status") == "Playing":
-            PLAYBACK_EVENT.set()
-        else:
-            PLAYBACK_EVENT.clear()
-
-        await write_json(writer, {"mpris": active_player})
-        MPRIS_QUEUE.task_done()

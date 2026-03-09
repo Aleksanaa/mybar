@@ -1,5 +1,5 @@
 import asyncio
-from ..niri import NiriConnection
+from ..niri import niri_conn
 from ..utils import write_json
 from ..tasks import long_running_task
 
@@ -7,7 +7,7 @@ from ..tasks import long_running_task
 @long_running_task
 async def niri_monitor(writer):
     """Monitors niri events and updates workspace state."""
-    niri = NiriConnection()
+    niri = niri_conn
 
     state = {"workspaces": [], "windows": []}
 

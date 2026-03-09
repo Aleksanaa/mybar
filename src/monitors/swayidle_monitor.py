@@ -3,10 +3,7 @@ import sys
 import dbus
 import dbus.mainloop.glib
 from gi.repository import GLib
-from ..tasks import long_running_task
 from ..utils import write_json
-
-DBUS_QUEUE = asyncio.Queue()
 
 
 def get_swayidle_unit_path(bus):
@@ -16,16 +13,21 @@ def get_swayidle_unit_path(bus):
     return manager.GetUnit("swayidle.service")
 
 
-def swayidle_dbus_worker(loop):
+def swayidle_dbus_worker(loop, writer):
     """Worker function to run the GLib main loop for D-Bus signals."""
+
+    def send_update(status):
+        is_active = status == "active"
+        asyncio.run_coroutine_threadsafe(
+            write_json(writer, {"swayidle": {"active": is_active}}), loop
+        )
 
     def properties_changed_handler(
         interface, changed_properties, invalidated_properties
     ):
         """Signal handler for property changes."""
         if "ActiveState" in changed_properties:
-            new_state = changed_properties["ActiveState"]
-            loop.call_soon_threadsafe(DBUS_QUEUE.put_nowait, new_state)
+            send_update(changed_properties["ActiveState"])
 
     try:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -39,7 +41,7 @@ def swayidle_dbus_worker(loop):
         initial_state = props_interface.Get(
             "org.freedesktop.systemd1.Unit", "ActiveState"
         )
-        loop.call_soon_threadsafe(DBUS_QUEUE.put_nowait, initial_state)
+        send_update(initial_state)
 
         # Subscribe to signals
         bus.add_signal_receiver(
@@ -62,19 +64,3 @@ def swayidle_dbus_worker(loop):
             print(f"Error in D-Bus thread: {e}", file=sys.stderr)
     except Exception as e:
         print(f"Error in D-Bus thread: {e}", file=sys.stderr)
-
-
-@long_running_task
-async def swayidle_monitor(writer):
-    """Monitors for swayidle service changes by listening to the DBUS_QUEUE."""
-    while True:
-        try:
-            # Wait for an update from the D-Bus thread
-            status = await DBUS_QUEUE.get()
-            is_active = status == "active"
-            response = {"swayidle": {"active": is_active}}
-            await write_json(writer, response)
-            DBUS_QUEUE.task_done()
-        except asyncio.CancelledError:
-            # Properly handle task cancellation
-            break

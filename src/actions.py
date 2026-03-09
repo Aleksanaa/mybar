@@ -4,7 +4,7 @@ import sys
 import dbus
 import pyudev
 from pulsectl_asyncio import PulseAsync
-from .niri import NiriConnection
+from .niri import niri_conn
 from .monitors.notification_monitor import get_notification_service
 from .monitors.audio_visualizer import VISUALIZER_ENABLED_EVENT
 
@@ -181,19 +181,19 @@ async def set_power_profile(data, writer):
 @action_handler("close-window")
 async def handle_close_window(data, writer):
     """Closes the currently focused window."""
-    await NiriConnection().send({"Action": {"CloseWindow": {"id": None}}})
+    await niri_conn.send({"Action": {"CloseWindow": {"id": None}}})
 
 
 @action_handler("maximize-column")
 async def handle_maximize_column(data, writer):
     """Maximizes the currently focused column."""
-    await NiriConnection().send({"Action": {"MaximizeColumn": {}}})
+    await niri_conn.send({"Action": {"MaximizeColumn": {}}})
 
 
 @action_handler("toggle-fullscreen")
 async def handle_toggle_fullscreen(data, writer):
     """Toggles fullscreen mode for the currently focused window."""
-    await NiriConnection().send({"Action": {"FullscreenWindow": {"id": None}}})
+    await niri_conn.send({"Action": {"FullscreenWindow": {"id": None}}})
 
 
 @action_handler("focus-workspace")
@@ -201,7 +201,7 @@ async def handle_focus_workspace(data, writer):
     """Focuses a workspace by its index."""
     index = data.get("index")
     if index is not None:
-        await NiriConnection().send(
+        await niri_conn.send(
             {"Action": {"FocusWorkspace": {"reference": {"Index": int(index)}}}}
         )
 
@@ -211,7 +211,7 @@ async def handle_focus_window(data, writer):
     """Focuses a window by its ID."""
     win_id = data.get("id")
     if win_id is not None:
-        await NiriConnection().send({"Action": {"FocusWindow": {"id": int(win_id)}}})
+        await niri_conn.send({"Action": {"FocusWindow": {"id": int(win_id)}}})
 
 
 @action_handler("close-window-by-id")
@@ -219,7 +219,7 @@ async def handle_close_window_by_id(data, writer):
     """Closes a specific window by its ID."""
     win_id = data.get("id")
     if win_id is not None:
-        await NiriConnection().send({"Action": {"CloseWindow": {"id": int(win_id)}}})
+        await niri_conn.send({"Action": {"CloseWindow": {"id": int(win_id)}}})
 
 
 def _toggle_swayidle_blocking():
@@ -263,7 +263,7 @@ _niri_listener_task = None
 async def _niri_window_focus_listener():
     global _wtype_process, _niri_listener_task
     try:
-        async for event in NiriConnection().stream_events():
+        async for event in niri_conn.stream_events():
             if "WindowFocusChanged" in event:
                 if _wtype_process and _wtype_process.returncode is None:
                     _wtype_process.terminate()

@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import json
 import os
 
 # Set latency hint for PulseAudio/Pipewire before soundcard imports
