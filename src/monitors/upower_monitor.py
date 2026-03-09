@@ -185,19 +185,10 @@ class BatteryHistoryManager:
         self.current_percentage = -1.0
         self.last_sent_bat = None
 
-    def update(self, state_dict):
-        # Round values for comparison to reduce noise
-        # Note: state_dict already contains some rounded values from parser.parse
-        if state_dict == self.last_sent_bat:
+    def check_hour_rollover(self):
+        if self.current_percentage < 0:
             return
 
-        asyncio.run_coroutine_threadsafe(
-            write_json(self.writer, {"bat": state_dict}), self.loop
-        )
-        self.last_sent_bat = state_dict
-
-        current_percentage = float(state_dict["value"])
-        self.current_percentage = current_percentage
         now = datetime.now()
         if now.hour != self.last_hour:
             if self.last_hour != -1:
@@ -212,6 +203,21 @@ class BatteryHistoryManager:
                 write_json(self.writer, {"bat_history": history_list}), self.loop
             )
             self.last_hour = now.hour
+
+    def update(self, state_dict):
+        # Round values for comparison to reduce noise
+        # Note: state_dict already contains some rounded values from parser.parse
+        if state_dict == self.last_sent_bat:
+            return
+
+        asyncio.run_coroutine_threadsafe(
+            write_json(self.writer, {"bat": state_dict}), self.loop
+        )
+        self.last_sent_bat = state_dict
+
+        current_percentage = float(state_dict["value"])
+        self.current_percentage = current_percentage
+        self.check_hour_rollover()
 
 
 def upower_dbus_worker(loop, writer):
@@ -245,8 +251,7 @@ def upower_dbus_worker(loop, writer):
                 send_update(state_dict)
 
     def check_history():
-        if history_manager.current_percentage >= 0:
-            history_manager.update(history_manager.current_percentage)
+        history_manager.check_hour_rollover()
         return True
 
     try:
