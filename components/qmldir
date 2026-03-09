@@ -1,6 +1,5 @@
 singleton Theme 1.0 Theme.qml
 MyCapsule 1.0 MyCapsule.qml
-MyThermo 1.0 MyThermo.qml
 MyPopup 1.0 MyPopup.qml
 MultiLineChart 1.0 MultiLineChart.qml
 MySlider 1.0 MySlider.qml
@@ -8,6 +7,7 @@ MyCombo 1.0 MyCombo.qml
 TrayMenu 1.0 TrayMenu.qml
 OSDPopup 1.0 OSDPopup.qml
 MyCalendar 1.0 MyCalendar.qml
+MyPillBar 1.0 MyPillBar.qml
 NotificationPopup 1.0 NotificationPopup.qml
 NotificationPanel 1.0 NotificationPanel.qml
 NotificationItem 1.0 NotificationItem.qml

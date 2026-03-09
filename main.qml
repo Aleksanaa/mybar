@@ -561,9 +561,12 @@ ShellRoot {
                                 }
                             }
 
-                            MyThermo {
+                            MyPillBar {
                                 anchors.verticalCenter: parent.verticalCenter
-                                progressValue: root.sysStats.cpu
+                                progress: root.sysStats.cpu
+                                vertical: true
+                                implicitHeight: 20
+                                implicitWidth: 6
                             }
                         }
 
@@ -581,9 +584,12 @@ ShellRoot {
                                 }
                             }
 
-                            MyThermo {
+                            MyPillBar {
                                 anchors.verticalCenter: parent.verticalCenter
-                                progressValue: root.sysStats.mem
+                                progress: root.sysStats.mem
+                                vertical: true
+                                implicitHeight: 20
+                                implicitWidth: 6
                             }
                         }
 
@@ -601,9 +607,12 @@ ShellRoot {
                                 }
                             }
 
-                            MyThermo {
+                            MyPillBar {
                                 anchors.verticalCenter: parent.verticalCenter
-                                progressValue: root.sysStats.temp
+                                progress: root.sysStats.temp
+                                vertical: true
+                                implicitHeight: 20
+                                implicitWidth: 6
                             }
                         }
                     }
@@ -671,23 +680,13 @@ ShellRoot {
                                     spacing: 4
                                     Repeater {
                                         model: root.sysStats.cpus
-                                        Rectangle {
+                                        MyPillBar {
                                             width: (parent.width - (root.sysStats.cpus.length - 1) * parent.spacing) / root.sysStats.cpus.length
                                             height: 12
-                                            color: "#313244"
-                                            radius: 2
-                                            Rectangle {
-                                                width: parent.width
-                                                height: parent.height * modelData
-                                                anchors.bottom: parent.bottom
-                                                radius: 2
-                                                color: modelData > 0.8 ? "#f38ba8" : (modelData > 0.5 ? "#fab387" : "#a6e3a1")
-                                                Behavior on height {
-                                                    NumberAnimation {
-                                                        duration: 300
-                                                    }
-                                                }
-                                            }
+                                            progress: modelData
+                                            vertical: true
+                                            backgroundColor: "#313244"
+                                            barColor: modelData > 0.8 ? "#f38ba8" : (modelData > 0.5 ? "#fab387" : "#a6e3a1")
                                         }
                                     }
                                 }
@@ -730,22 +729,12 @@ ShellRoot {
                                             font.family: Theme.globalFont
                                         }
                                     }
-                                    Rectangle {
+                                    MyPillBar {
                                         height: 4
                                         Layout.fillWidth: true
-                                        color: "#313244"
-                                        radius: 2
-                                        Rectangle {
-                                            height: parent.height
-                                            width: parent.width * root.sysStats.mem
-                                            color: "#fab387"
-                                            radius: 2
-                                            Behavior on width {
-                                                NumberAnimation {
-                                                    duration: 300
-                                                }
-                                            }
-                                        }
+                                        backgroundColor: "#313244"
+                                        barColor: "#fab387"
+                                        progress: root.sysStats.mem
                                     }
                                 }
 
@@ -779,22 +768,12 @@ ShellRoot {
                                             font.family: Theme.globalFont
                                         }
                                     }
-                                    Rectangle {
+                                    MyPillBar {
                                         height: 4
                                         Layout.fillWidth: true
-                                        color: "#313244"
-                                        radius: 2
-                                        Rectangle {
-                                            height: parent.height
-                                            width: parent.width * root.sysStats.swap
-                                            color: "#f9e2af"
-                                            radius: 2
-                                            Behavior on width {
-                                                NumberAnimation {
-                                                    duration: 300
-                                                }
-                                            }
-                                        }
+                                        backgroundColor: "#313244"
+                                        barColor: "#f9e2af"
+                                        progress: root.sysStats.swap
                                     }
                                 }
 
@@ -828,22 +807,12 @@ ShellRoot {
                                             font.family: Theme.globalFont
                                         }
                                     }
-                                    Rectangle {
+                                    MyPillBar {
                                         height: 4
                                         Layout.fillWidth: true
-                                        color: "#313244"
-                                        radius: 2
-                                        Rectangle {
-                                            height: parent.height
-                                            width: parent.width * root.sysStats.temp
-                                            color: "#a6e3a1"
-                                            radius: 2
-                                            Behavior on width {
-                                                NumberAnimation {
-                                                    duration: 300
-                                                }
-                                            }
-                                        }
+                                        backgroundColor: "#313244"
+                                        barColor: "#a6e3a1"
+                                        progress: root.sysStats.temp
                                     }
                                 }
 
@@ -877,22 +846,12 @@ ShellRoot {
                                             font.family: Theme.globalFont
                                         }
                                     }
-                                    Rectangle {
+                                    MyPillBar {
                                         height: 4
                                         Layout.fillWidth: true
-                                        color: "#313244"
-                                        radius: 2
-                                        Rectangle {
-                                            height: parent.height
-                                            width: parent.width * (root.sysStats.cpu_freq.max > 0 ? (root.sysStats.cpu_freq.current / root.sysStats.cpu_freq.max) : 0)
-                                            color: "#89b4fa"
-                                            radius: 2
-                                            Behavior on width {
-                                                NumberAnimation {
-                                                    duration: 300
-                                                }
-                                            }
-                                        }
+                                        backgroundColor: "#313244"
+                                        barColor: "#89b4fa"
+                                        progress: root.sysStats.cpu_freq.max > 0 ? (root.sysStats.cpu_freq.current / root.sysStats.cpu_freq.max) : 0
                                     }
                                 }
                             }
@@ -1706,9 +1665,12 @@ ShellRoot {
                                 }
                             }
 
-                            MyThermo {
+                            MyPillBar {
                                 anchors.verticalCenter: parent.verticalCenter
-                                progressValue: root.sysStats.brightness.value
+                                progress: root.sysStats.brightness.value
+                                vertical: true
+                                implicitHeight: 20
+                                implicitWidth: 6
                             }
                         }
 
@@ -1726,9 +1688,12 @@ ShellRoot {
                                 }
                             }
 
-                            MyThermo {
+                            MyPillBar {
                                 anchors.verticalCenter: parent.verticalCenter
-                                progressValue: root.sysStats.volume.value
+                                progress: root.sysStats.volume.value
+                                vertical: true
+                                implicitHeight: 20
+                                implicitWidth: 6
                             }
                         }
                     }
