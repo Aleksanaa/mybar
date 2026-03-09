@@ -9,6 +9,7 @@ AdjustPopup 1.0 AdjustPopup.qml
 TrayMenu 1.0 TrayMenu.qml
 OSDPopup 1.0 OSDPopup.qml
 MyCalendar 1.0 MyCalendar.qml
+BatteryPopup 1.0 BatteryPopup.qml
 MyPillBar 1.0 MyPillBar.qml
 MonitorPopup 1.0 MonitorPopup.qml
 NotificationPopup 1.0 NotificationPopup.qml
