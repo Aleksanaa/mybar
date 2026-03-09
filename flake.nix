@@ -35,10 +35,10 @@
                   ps.pyudev
                   ps.pulsectl-asyncio
                   ps.numpy
+                  ps.soundcard
                 ]))
                 pkgs.gobject-introspection
                 pkgs.wtype
-                pkgs.pulseaudio
               ];
             };
           };

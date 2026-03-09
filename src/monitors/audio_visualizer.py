@@ -3,6 +3,11 @@ import sys
 import json
 import os
 
+# Set latency hint for PulseAudio/Pipewire before soundcard imports
+os.environ["PULSE_LATENCY_MSEC"] = "20"
+
+import soundcard as sc
+
 # Try to import numpy
 try:
     import numpy as np
@@ -14,87 +19,96 @@ except ImportError:
 from ..utils import write_json
 from ..tasks import long_running_task
 
+# Shared state to allow mpris_monitor to toggle visualizer
+PLAYBACK_EVENT = asyncio.Event()
+
 # Configuration
 NUM_BARS = 24
 SAMPLING_RATE = 44100
-FFT_SIZE = 2048
-UPDATE_INTERVAL = 0.02  # ~50 FPS for smoothness
+FFT_SIZE = 2048  # Balanced resolution/latency
 
 
 class CavaProcessor:
-    def __init__(self, num_bars):
+    def __init__(self, num_bars, sampling_rate, fft_size):
         self.num_bars = num_bars
-        self.prev_bars = np.zeros(num_bars)
-        self.fall_velocity = np.zeros(num_bars)
+        self.prev_bars = np.zeros(num_bars, dtype=np.float32)
+        self.fall_velocity = np.zeros(num_bars, dtype=np.float32)
         self.dynamic_gain = 0.05
-        self.gravity = 0.02
+        self.gravity = 0.015
+        self.smooth_factor = 0.6
+
+        # Pre-compute window and audible range indices
+        self.window = np.hanning(fft_size).astype(np.float32)
+        self.low_idx = int(50 * fft_size / sampling_rate)
+        self.high_idx = int(15000 * fft_size / sampling_rate)
+
+        # Pre-compute binning indices
+        data_len = max(1, self.high_idx - self.low_idx)
+        self.indices = np.geomspace(1, data_len, num_bars + 1).astype(int) - 1
+
+        # Pre-compute frequency weighting (boost treble)
+        self.weighting = np.linspace(1.0, 3.5, num_bars).astype(np.float32)
 
     def process(self, samples):
         if not HAS_NUMPY:
             return [0.0] * self.num_bars
 
+        # OPTIMIZATION: Skip FFT if the input chunk is essentially silent
+        # This saves significant CPU when no audio is playing
+        if np.max(np.abs(samples)) < 0.001:
+            return self.fall_off()
+
         # 1. Windowing & FFT
-        windowed = samples * np.hanning(len(samples))
+        windowed = samples * self.window
         fft_res = np.abs(np.fft.rfft(windowed)) / (len(samples) / 2)
 
-        # 2. Focus on audible range (50Hz - 15kHz)
-        low_idx = int(50 * len(samples) / SAMPLING_RATE)
-        high_idx = int(15000 * len(samples) / SAMPLING_RATE)
-        data = fft_res[low_idx:high_idx]
-
+        # 2. Focus on audible range
+        data = fft_res[self.low_idx : self.high_idx]
         if len(data) == 0:
             return self.fall_off()
 
-        # 3. Logarithmic binning with Max-pooling (more reactive than mean)
-        indices = np.geomspace(1, len(data), self.num_bars + 1).astype(int) - 1
-        raw_bars = np.zeros(self.num_bars)
-
+        # 3. Logarithmic binning with Max-pooling
+        raw_bars = np.zeros(self.num_bars, dtype=np.float32)
         for i in range(self.num_bars):
-            start, end = indices[i], indices[i + 1]
+            start, end = self.indices[i], self.indices[i + 1]
             if start >= end:
                 raw_bars[i] = data[min(start, len(data) - 1)]
             else:
                 raw_bars[i] = np.max(data[start:end])
 
-        # 4. Slope / Weighting (boost treble slightly)
-        weighting = np.linspace(1.0, 3.5, self.num_bars)
-        raw_bars *= weighting
-
-        # 5. Dynamic Gain Control (DGC)
-        # This is the "magic" that keeps bars reaching the top regardless of volume
+        # 4. Weighting & Dynamic Gain Control
+        raw_bars *= self.weighting
         current_max = np.max(raw_bars)
+
         if current_max > self.dynamic_gain:
-            self.dynamic_gain = (
-                self.dynamic_gain * 0.7 + current_max * 0.3
-            )  # Rapid rise
+            self.dynamic_gain = self.dynamic_gain * 0.7 + current_max * 0.3
         else:
-            self.dynamic_gain = (
-                self.dynamic_gain * 0.995 + current_max * 0.005
-            )  # Very slow fall
+            self.dynamic_gain = self.dynamic_gain * 0.995 + current_max * 0.005
 
-        # Ensure we don't divide by near-zero during silence
+        # 5. Normalization
         gain_floor = max(self.dynamic_gain, 0.005)
-        normalized = np.clip(raw_bars / gain_floor, 0, 1)
+        normalized = np.power(np.clip(raw_bars / gain_floor, 0, 1), 0.6)
 
-        # Non-linear scaling to make low energy more visible
-        normalized = np.power(normalized, 0.6)
+        # 6. Temporal Smoothing & Gravity (Vectorized)
+        rising = normalized > self.prev_bars
+        self.prev_bars[rising] = (normalized[rising] * self.smooth_factor) + (
+            self.prev_bars[rising] * (1 - self.smooth_factor)
+        )
+        self.fall_velocity[rising] = 0
 
-        # 6. Gravity (Fall-off)
-        for i in range(self.num_bars):
-            if normalized[i] > self.prev_bars[i]:
-                self.prev_bars[i] = normalized[i]
-                self.fall_velocity[i] = 0
-            else:
-                self.fall_velocity[i] += self.gravity
-                self.prev_bars[i] = max(0, self.prev_bars[i] - self.fall_velocity[i])
+        falling = ~rising
+        self.fall_velocity[falling] += self.gravity
+        self.prev_bars[falling] = np.maximum(
+            0, self.prev_bars[falling] - self.fall_velocity[falling]
+        )
 
-        return self.prev_bars.tolist()
+        # OPTIMIZATION: Rounding reduces JSON size and stringification overhead
+        return np.round(self.prev_bars, 2).tolist()
 
     def fall_off(self):
-        for i in range(self.num_bars):
-            self.fall_velocity[i] += self.gravity
-            self.prev_bars[i] = max(0, self.prev_bars[i] - self.fall_velocity[i])
-        return self.prev_bars.tolist()
+        self.fall_velocity += self.gravity
+        self.prev_bars = np.maximum(0, self.prev_bars - self.fall_velocity)
+        return np.round(self.prev_bars, 2).tolist()
 
 
 @long_running_task
@@ -102,54 +116,56 @@ async def audio_visualizer_monitor(writer):
     if not HAS_NUMPY:
         return
 
-    processor = CavaProcessor(NUM_BARS)
-    chunk_size = FFT_SIZE * 2
+    processor = CavaProcessor(NUM_BARS, SAMPLING_RATE, FFT_SIZE)
+    chunk_duration = FFT_SIZE / SAMPLING_RATE
 
-    cmd = [
-        "parec",
-        "--format=s16le",
-        "--channels=1",
-        "--rate=44100",
-        "--latency-msec=10",
-        "--device=@DEFAULT_SINK@.monitor",
-    ]
-
-    last_was_zero = False
     while True:
-        proc = None
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
-            )
+            # Wait until something starts playing according to MPRIS
+            await PLAYBACK_EVENT.wait()
 
-            while True:
-                try:
-                    # No artificial sleep; throttled by audio stream
-                    data = await proc.stdout.readexactly(chunk_size)
-                except:
-                    break
+            speaker = sc.default_speaker()
+            mic = sc.get_microphone(speaker.id + ".monitor", include_loopback=True)
 
-                samples = (
-                    np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
-                )
-                bars = processor.process(samples)
+            last_was_zero = False
+            # Counter for how long it's been silent to decide when to stop recording
+            silence_counter = 0
 
-                is_zero = all(v == 0 for v in bars)
-                if not (is_zero and last_was_zero):
-                    await write_json(writer, {"visualizer": bars})
-                last_was_zero = is_zero
+            with mic.recorder(samplerate=SAMPLING_RATE, channels=1) as recorder:
+                while (
+                    PLAYBACK_EVENT.is_set() or silence_counter < 50
+                ):  # ~1s grace period
+                    t0 = asyncio.get_event_loop().time()
+                    data = await asyncio.to_thread(recorder.record, numframes=FFT_SIZE)
+                    t1 = asyncio.get_event_loop().time()
+
+                    # Drain buffer if lagging
+                    while (t1 - t0) < chunk_duration * 0.8:
+                        t0 = t1
+                        data = await asyncio.to_thread(
+                            recorder.record, numframes=FFT_SIZE
+                        )
+                        t1 = asyncio.get_event_loop().time()
+
+                    samples = data.flatten().astype(np.float32)
+                    bars = processor.process(samples)
+
+                    is_zero = np.all(processor.prev_bars < 0.01)
+                    if is_zero:
+                        silence_counter += 1
+                    else:
+                        silence_counter = 0
+
+                    if not (is_zero and last_was_zero):
+                        await write_json(writer, {"visualizer": bars})
+                    last_was_zero = is_zero
+
+                    # If MPRIS says it stopped, we don't need to record anymore
+                    if not PLAYBACK_EVENT.is_set() and is_zero:
+                        break
 
         except asyncio.CancelledError:
-            if proc:
-                proc.kill()
             raise
         except Exception as e:
             print(f"Audio Visualizer error: {e}", file=sys.stderr)
             await asyncio.sleep(2)
-        finally:
-            if proc:
-                try:
-                    proc.kill()
-                    await proc.wait()
-                except:
-                    pass

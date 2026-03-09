@@ -4,6 +4,7 @@ import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from ..utils import write_json
 from ..tasks import long_running_task
+from .audio_visualizer import PLAYBACK_EVENT
 
 MPRIS_QUEUE = asyncio.Queue()
 
@@ -119,6 +120,12 @@ async def mpris_monitor(writer):
                 name = list(players.keys())[0]
                 active_player = players[name]
                 active_player["bus_name"] = name
+
+        # Signal the audio visualizer to start/stop
+        if active_player and active_player.get("status") == "Playing":
+            PLAYBACK_EVENT.set()
+        else:
+            PLAYBACK_EVENT.clear()
 
         await write_json(writer, {"mpris": active_player})
         MPRIS_QUEUE.task_done()
