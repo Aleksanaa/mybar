@@ -1741,6 +1741,12 @@ ShellRoot {
                         id: adjustDetailPopup
                         target: adjustCapsule
                         active: panel.currentPopup === adjustDetailPopup
+                        onActiveChanged: {
+                            writeOutput({
+                                "action": "toggle_visualizer",
+                                "enabled": active
+                            });
+                        }
 
                         Item {
                             width: parent.width

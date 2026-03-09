@@ -6,6 +6,7 @@ import pyudev
 from pulsectl_asyncio import PulseAsync
 from .niri import NiriConnection
 from .monitors.notification_monitor import get_notification_service
+from .monitors.audio_visualizer import VISUALIZER_ENABLED_EVENT
 
 # Registry for action handlers
 ACTION_HANDLERS = {}
@@ -384,3 +385,13 @@ async def invoke_notification_action(data, writer):
         await asyncio.to_thread(
             service.ActionInvoked, int(notification_id), str(action_key)
         )
+
+
+@action_handler("toggle_visualizer")
+async def toggle_visualizer(data, writer):
+    """Toggles the audio visualizer enabled state."""
+    enabled = data.get("enabled", False)
+    if enabled:
+        VISUALIZER_ENABLED_EVENT.set()
+    else:
+        VISUALIZER_ENABLED_EVENT.clear()

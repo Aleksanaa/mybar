@@ -21,6 +21,8 @@ from ..tasks import long_running_task
 
 # Shared state to allow mpris_monitor to toggle visualizer
 PLAYBACK_EVENT = asyncio.Event()
+# Shared state to allow UI to toggle visualizer (e.g. only when popup is open)
+VISUALIZER_ENABLED_EVENT = asyncio.Event()
 
 # Configuration
 NUM_BARS = 24
@@ -121,8 +123,19 @@ async def audio_visualizer_monitor(writer):
 
     while True:
         try:
-            # Wait until something starts playing according to MPRIS
-            await PLAYBACK_EVENT.wait()
+            # Wait until both something starts playing AND the visualizer is enabled by the UI
+            while not (PLAYBACK_EVENT.is_set() and VISUALIZER_ENABLED_EVENT.is_set()):
+                tasks = []
+                if not PLAYBACK_EVENT.is_set():
+                    tasks.append(asyncio.create_task(PLAYBACK_EVENT.wait()))
+                if not VISUALIZER_ENABLED_EVENT.is_set():
+                    tasks.append(asyncio.create_task(VISUALIZER_ENABLED_EVENT.wait()))
+
+                if tasks:
+                    await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                    for t in tasks:
+                        if not t.done():
+                            t.cancel()
 
             speaker = sc.default_speaker()
             mic = sc.get_microphone(speaker.id + ".monitor", include_loopback=True)
@@ -133,7 +146,9 @@ async def audio_visualizer_monitor(writer):
 
             with mic.recorder(samplerate=SAMPLING_RATE, channels=1) as recorder:
                 while (
-                    PLAYBACK_EVENT.is_set() or silence_counter < 50
+                    PLAYBACK_EVENT.is_set()
+                    and VISUALIZER_ENABLED_EVENT.is_set()
+                    or silence_counter < 50
                 ):  # ~1s grace period
                     t0 = asyncio.get_event_loop().time()
                     data = await asyncio.to_thread(recorder.record, numframes=FFT_SIZE)
@@ -160,8 +175,14 @@ async def audio_visualizer_monitor(writer):
                         await write_json(writer, {"visualizer": bars})
                     last_was_zero = is_zero
 
-                    # If MPRIS says it stopped, we don't need to record anymore
-                    if not PLAYBACK_EVENT.is_set() and is_zero:
+                    # If MPRIS says it stopped OR visualizer was disabled, we don't need to record anymore
+                    if (
+                        not (
+                            PLAYBACK_EVENT.is_set()
+                            and VISUALIZER_ENABLED_EVENT.is_set()
+                        )
+                        and is_zero
+                    ):
                         break
 
         except asyncio.CancelledError:
