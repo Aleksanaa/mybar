@@ -4,6 +4,7 @@ MyPopup 1.0 MyPopup.qml
 MultiLineChart 1.0 MultiLineChart.qml
 MySlider 1.0 MySlider.qml
 MyCombo 1.0 MyCombo.qml
+AdjustPopup 1.0 AdjustPopup.qml
 TrayMenu 1.0 TrayMenu.qml
 OSDPopup 1.0 OSDPopup.qml
 MyCalendar 1.0 MyCalendar.qml
