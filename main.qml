@@ -1260,7 +1260,7 @@ ShellRoot {
                     implicitHeight: 32
                     IconImage {
                         anchors.centerIn: parent
-                        source: Quickshell.iconPath("notifications-symbolic")
+                        source: Quickshell.iconPath(`notifications${root.sysStats.notifications.dnd ? "-disabled" : ""}-symbolic`)
                         implicitSize: 20
                         layer.enabled: true
                         layer.effect: ColorOverlay {
@@ -1272,6 +1272,9 @@ ShellRoot {
                         onTapped: {
                             panel.currentPopup = notificationPanel;
                         }
+                        onLongPressed: root.writeOutput({
+                            "action": "toggle-dnd"
+                        })
                     }
                 }
 

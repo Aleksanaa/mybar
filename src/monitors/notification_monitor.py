@@ -34,9 +34,6 @@ class NotificationService(dbus.service.Object):
         hints,
         expire_timeout,
     ):
-        if self.dnd:
-            return 0
-
         notification_id = replaces_id if replaces_id != 0 else self.next_id
         if replaces_id == 0:
             self.next_id += 1
@@ -201,7 +198,8 @@ async def notification_monitor(writer):
                 list_changed = True
 
                 # Send the new notification specifically for the popup immediately
-                await write_json(writer, {"notification_popup": n})
+                if not dnd:
+                    await write_json(writer, {"notification_popup": n})
 
             elif ev_type == "close":
                 original_len = len(notifications_list)
