@@ -61,10 +61,12 @@ async def system_monitor(writer):
         await asyncio.sleep(1)
 
         # --- CPU and Memory ---
-        cpu_percent = psutil.cpu_percent(interval=None) / 100.0
-        cpu_percents = [
-            round(p / 100.0, 2) for p in psutil.cpu_percent(interval=None, percpu=True)
-        ]
+        percpu_usage = psutil.cpu_percent(interval=None, percpu=True)
+        cpu_percents = [round(p / 100.0, 2) for p in percpu_usage]
+        cpu_percent = (
+            (sum(percpu_usage) / len(percpu_usage)) / 100.0 if percpu_usage else 0.0
+        )
+
         mem = psutil.virtual_memory()
         swap = psutil.swap_memory()
         cpu_freq = psutil.cpu_freq()
