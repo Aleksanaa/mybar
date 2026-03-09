@@ -26,7 +26,7 @@ ColumnLayout {
         IconImage {
             id: groupIcon
             implicitSize: 16
-            source: Theme.resolveAppIcon(groupRoot.appIcon, groupRoot.appName, "preferences-system-notification-symbolic")
+            source: Theme.resolveAppIcon(groupRoot.appIcon, groupRoot.appName, "preferences-desktop-notification-symbolic")
         }
 
         Text {
