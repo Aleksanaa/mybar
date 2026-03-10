@@ -138,7 +138,7 @@ def notification_worker(loop, writer):
     bus = dbus.SessionBus()
 
     try:
-        dbus.service.BusName(
+        bus_name = dbus.service.BusName(
             "org.freedesktop.Notifications",
             bus,
             allow_replacement=True,
